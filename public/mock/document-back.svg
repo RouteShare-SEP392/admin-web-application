@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Ảnh giấy tờ mẫu, MẶT SAU">
+  <rect width="640" height="400" rx="24" fill="#EAF4EE"/>
+  <rect x="24" y="24" width="592" height="352" rx="16" fill="#fff" stroke="#C7D6D0" stroke-width="2" stroke-dasharray="10 8"/>
+  <rect x="56" y="96" width="150" height="190" rx="10" fill="#C7D6D0"/>
+  <rect x="240" y="104" width="300" height="18" rx="9" fill="#C7D6D0"/>
+  <rect x="240" y="144" width="220" height="14" rx="7" fill="#D9E7DF"/>
+  <rect x="240" y="178" width="260" height="14" rx="7" fill="#D9E7DF"/>
+  <rect x="240" y="212" width="180" height="14" rx="7" fill="#D9E7DF"/>
+  <text x="320" y="330" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1F5C45">ẢNH MẪU · MẶT SAU</text>
+  <text x="320" y="356" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#5B6660">Không phải giấy tờ thật</text>
+</svg>

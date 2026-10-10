@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/*
+ * Bảng màu "Rêu / Chanh" của RouteShare, dùng chung tên token với
+ * Frontend-mobile/tailwind.config.js. Các bậc 50, 200, 700, 900 lấy nguyên từ
+ * mobile; các bậc còn lại nội suy cho hover, focus và biểu đồ.
+ */
+@theme inline {
+  --color-brand-50: #eaf4ee;
+  --color-brand-100: #d9e7df;
+  --color-brand-200: #c7d6d0;
+  --color-brand-300: #9db8ac;
+  --color-brand-400: #6f9987;
+  --color-brand-500: #437d66;
+  --color-brand-600: #2c6b53;
+  --color-brand-700: #1f5c45;
+  --color-brand-800: #194c39;
+  --color-brand-900: #143d2e;
+  --color-accent: #c8f25a;
+  --color-ink: #1a1f1c;
+  --color-muted: #5b6660;
+  --color-subtle: #8a948f;
+  --color-canvas: #f6f8f6;
+  --color-line: #e2e8e4;
+  --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+/* Hộp thoại dùng thẻ <dialog> gốc của trình duyệt. */
+dialog::backdrop {
+  background: rgb(20 61 46 / 0.45);
+}
+
+dialog[open] {
+  animation: dialog-in 140ms ease-out;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog[open] {
+    animation: none;
+  }
+}
