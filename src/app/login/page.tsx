@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Route, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Đăng nhập" };
@@ -13,9 +14,7 @@ export default function LoginPage() {
           className="absolute -right-24 -bottom-24 -z-10 size-80 rounded-full border-[48px] border-brand-700/60"
         />
         <div className="flex items-center gap-3">
-          <span className="inline-flex size-10 items-center justify-center rounded-xl bg-accent text-brand-900">
-            <Route className="size-6" aria-hidden />
-          </span>
+          <Logo className="size-12" />
           <span className="text-lg font-semibold">RouteShare</span>
         </div>
 
@@ -39,9 +38,7 @@ export default function LoginPage() {
       <main className="flex items-center justify-center bg-canvas px-4 py-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <span className="inline-flex size-10 items-center justify-center rounded-xl bg-brand-900 text-accent">
-              <Route className="size-6" aria-hidden />
-            </span>
+            <Logo className="size-12" />
             <span className="text-lg font-semibold">RouteShare</span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Đăng nhập quản trị</h1>

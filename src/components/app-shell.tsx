@@ -20,6 +20,7 @@ import { useState, type ReactNode } from "react";
 import { ME, PENDING_COUNTS } from "@/lib/graphql";
 import { resolveMockMode } from "@/lib/mock-mode";
 import { cn } from "@/lib/utils";
+import { Logo } from "./logo";
 import { Avatar } from "./ui/misc";
 
 interface NavItem {
@@ -104,9 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="flex h-16 items-center justify-between px-5">
           <Link href="/" className="flex items-center gap-2.5" onClick={() => setMenuOpen(false)}>
-            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-accent text-brand-900">
-              <Route className="size-5" aria-hidden />
-            </span>
+            <Logo className="size-10" />
             <span className="leading-tight">
               <span className="block font-semibold">RouteShare</span>
               <span className="block text-xs text-brand-300">Trang quản trị</span>
