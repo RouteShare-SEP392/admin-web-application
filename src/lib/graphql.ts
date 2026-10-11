@@ -1,8 +1,8 @@
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import type {
-  DashboardStats,
   DriverVerification,
   DriverViolation,
+  OperationsOverview,
   Page,
   SystemSetting,
   Trip,
@@ -152,25 +152,94 @@ export const REVIEW_VEHICLE_VERIFICATION: TypedDocumentNode<
 // API admin đề xuất (hợp đồng: src/server/mock/schema.ts)
 // ---------------------------------------------------------------------------
 
-export const DASHBOARD_STATS: TypedDocumentNode<{
-  adminDashboardStats: DashboardStats;
-}> = gql`
-  query DashboardStats {
-    adminDashboardStats {
-      totalUsers
-      newUsersLast7Days
-      approvedDrivers
-      pendingDriverVerifications
-      pendingVehicleVerifications
-      activeTrips
-      openViolations
-      tripsByStatus {
-        status
-        count
+export const OPERATIONS_OVERVIEW: TypedDocumentNode<
+  { adminOperationsOverview: OperationsOverview },
+  { rangeDays: number }
+> = gql`
+  query OperationsOverview($rangeDays: Int!) {
+    adminOperationsOverview(rangeDays: $rangeDays) {
+      generatedAt
+      rangeDays
+      kpis {
+        key
+        value
+        delta
+        deltaUnit
+        series
+        secondaryValue
       }
-      signupsByDay {
+      dailyTrips {
         date
-        count
+        posted
+        completed
+      }
+      funnel {
+        searches
+        matchedSearches
+        bookingRequests
+        approvedBookings
+      }
+      matching {
+        averageOverlapPercent
+        overlapDeltaPoints
+        averageDetourKm
+        detourDeltaKm
+      }
+      safety {
+        pendingVerifications
+        overdueVerifications
+        openViolations
+        passengerReportViolations
+        usersToReview
+      }
+    }
+  }
+`;
+
+export type RecentTripFilter = "all" | "lowMatch" | "hasViolation" | "today";
+
+export const RECENT_TRIPS: TypedDocumentNode<
+  { adminTrips: Page<Trip> },
+  {
+    input: PageVars & {
+      sortBy: "CREATED_AT";
+      lowMatchOnly?: boolean;
+      hasViolation?: boolean;
+      todayOnly?: boolean;
+    };
+  }
+> = gql`
+  query RecentTrips($input: AdminTripsInput) {
+    adminTrips(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        id
+        tripCode
+        status
+        createdAt
+        totalSeatsOffered
+        bookedSeats
+        averageMatchPercent
+        sharedCostTotal
+        driver {
+          id
+          fullName
+          avatarUrl
+          ratingAsDriver
+        }
+        vehicle {
+          id
+          make
+          model
+        }
+        stops {
+          id
+          stopName
+          stopType
+          sequenceOrder
+        }
       }
     }
   }
@@ -302,6 +371,7 @@ export const TRIPS: TypedDocumentNode<
       pageSize
       items {
         id
+        tripCode
         status
         departureTime
         totalDistanceKm
@@ -331,6 +401,10 @@ export const TRIP_DETAIL: TypedDocumentNode<{ adminTrip: Trip }, { id: string }>
   query AdminTrip($id: ID!) {
     adminTrip(id: $id) {
       id
+      tripCode
+      bookedSeats
+      averageMatchPercent
+      sharedCostTotal
       status
       departureTime
       estimatedArrivalTime

@@ -115,20 +115,50 @@ Tha một vi phạm `NO_SHOW_WITH_PASSENGERS` phải hoàn tác hậu quả củ
 - Tính lại `suspendedUntil` theo các vi phạm còn hiệu lực.
 - Nếu vi phạm đó đã dẫn tới thu hồi quyền tài xế (`REVOKED_DRIVER_LICENSE`) thì khôi phục `verificationStatus = APPROVED`.
 
-### Tổng quan
+### Tổng quan vận hành
 
-| Trường của `adminDashboardStats` | Cách tính |
+`adminOperationsOverview(rangeDays)` thay cho `adminDashboardStats` trong bản hợp đồng trước.
+
+| Hạng mục | Ràng buộc |
 | --- | --- |
-| `totalUsers`, `newUsersLast7Days`, `approvedDrivers` | Chỉ đếm tài khoản `role = USER`. |
-| `pendingDriverVerifications`, `pendingVehicleVerifications` | Khớp với số phần tử của hai query danh sách chờ duyệt hiện có. |
-| `activeTrips` | Số chuyến `PUBLISHED` cộng `IN_PROGRESS`. |
-| `openViolations` | Số vi phạm có `isForgiven = false`. |
-| `tripsByStatus` | Trả đủ mọi trạng thái, kể cả trạng thái có số lượng bằng 0. |
-| `signupsByDay` | Đúng 7 phần tử, cũ trước mới sau, tính ngày theo múi giờ `Asia/Ho_Chi_Minh`, ngày không có đăng ký trả `count = 0`. |
+| `rangeDays` | Chỉ nhận 7, 14 hoặc 30. |
+| Kỳ so sánh | Mọi `delta` so kỳ `rangeDays` ngày gần nhất với kỳ liền trước cùng độ dài. Riêng `TRIPS_TODAY` so hôm nay với hôm qua. Kỳ trước bằng 0 thì trả `delta = null`, không trả vô cực hay 0. |
+| `kpis` | Đủ 8 phần tử theo thứ tự của `AdminOverviewKpiKey`. `series` luôn có 10 giá trị, cũ trước mới sau. |
+| Người dùng | Chỉ đếm tài khoản `role = USER`. |
+| Chuyến | Không tính chuyến `DRAFT`. Chuyến được xếp vào ngày theo giờ khởi hành, múi giờ `Asia/Ho_Chi_Minh`. |
+| `dailyTrips` | Đúng `rangeDays` phần tử, ngày không có chuyến trả 0. |
+| Đặt chỗ | "Đã xác nhận" gồm `CONFIRMED` và `COMPLETED`. "Phản hồi dưới 15 phút" tính từ lúc khách gửi yêu cầu đến lúc tài xế duyệt hoặc từ chối. |
+| `safety` | `pendingVerifications` khớp với tổng số phần tử của hai query danh sách chờ duyệt. `overdueVerifications` là hồ sơ chờ quá 24 giờ. |
+
+Các số liệu backend chưa có nguồn dữ liệu:
+
+| Số liệu | Cần bổ sung |
+| --- | --- |
+| Đặt chỗ, khách hoạt động, ghế đã đặt, chi phí chia sẻ | Module đặt chỗ (`bookings`, `booking_segments`). |
+| Tỷ lệ trùng tuyến của một đặt chỗ | Tổng độ dài các chặng khách đi chia cho tổng độ dài lộ trình của chuyến, lưu lại lúc tạo đặt chỗ. |
+| Quãng đường đi vòng | Chỉ có nghĩa nếu tài xế được đón trả ngoài các điểm dừng đã khai báo. Với mô hình ghép theo điểm dừng hiện tại, số này luôn bằng 0; nhóm cần quyết định giữ hay bỏ chỉ số. |
+| Lượt tìm chuyến, lượt tìm có kết quả | Ghi log mỗi lần gọi `searchTrips` kèm số kết quả trả về. Admin web đang hiển thị số ước lượng cho hai bậc này. |
+
+Bảng "Chuyến gần đây" dùng `adminTrips` với `sortBy = CREATED_AT` và ba bộ lọc `lowMatchOnly`, `hasViolation`, `todayOnly`. Type `Trip` cần thêm bốn trường: `tripCode`, `bookedSeats`, `averageMatchPercent`, `sharedCostTotal`.
+
+### Xuất CSV
+
+Admin web hiện tự tạo file từ dữ liệu mẫu tại `GET /api/export/trips`. Khi nối backend thật, việc xuất phải do backend thực hiện để kiểm soát được quyền và nhật ký.
+
+| Hạng mục | Ràng buộc |
+| --- | --- |
+| Phạm vi | Xuất đúng kỳ và bộ lọc đang chọn trên trang: `rangeDays` và một trong `all`, `lowMatch`, `hasViolation`, `today`. |
+| Dữ liệu cá nhân | Không xuất số điện thoại, email, địa chỉ, ảnh hay số giấy tờ. Điểm đi và điểm đến chỉ ghi tên điểm dừng. |
+| Che thông tin | Họ tên giữ họ và viết tắt phần còn lại ("Nguyễn V. A."). Biển số giữ mã tỉnh và hai số cuối ("51H-***.45"). |
+| Nhật ký | Mỗi lần xuất ghi lại: admin thực hiện, thời điểm, bộ lọc, số dòng. Ghi cả khi file rỗng. |
+| Quyền | Chỉ `ADMIN`. Nếu sau này có nhiều cấp quản trị, quyền xuất tách riêng khỏi quyền xem. |
+| File lớn | Trên một ngưỡng số dòng do nhóm chốt, không trả file trực tiếp mà gửi qua email công ty của admin. Admin web chưa làm nhánh này. |
+| Định dạng | UTF-8 có BOM để Excel đọc đúng tiếng Việt. Ô bắt đầu bằng `=`, `+`, `-`, `@` phải được thêm dấu nháy đơn phía trước để không bị hiểu là công thức. |
 
 ## 4. Điểm cần nhóm chốt
 
 1. **Khoảng giá mỗi km.** Tài liệu kiến trúc ghi 800 đến 2.500 đồng, code đang cho phép 500 đến 3.000. Giá trị seed cho `MIN_COST_PER_KM` và `MAX_COST_PER_KM` theo bên nào?
 2. **Bán kính tìm chuyến.** Admin web đang để mẫu 3.000 mét, code dùng mặc định 5 km. Ngoài ra `searchTrips` đang nhận `maxPickupRadiusKm` và `maxDropoffRadiusKm` từ client; cấu hình là giá trị mặc định hay giới hạn trên?
 3. **Mức phạt theo số lần bỏ chuyến.** Hiện là tạm khoá 24 giờ ở lần 1, 72 giờ ở lần 2, thu hồi ở lần 3. Nếu `NO_SHOW_STRIKE_LIMIT` đổi thành 5 thì các lần 3 và 4 xử lý thế nào?
-4. **Nhật ký thao tác.** Lý do khoá tài khoản hiện không có cột nào lưu. Có cần bảng nhật ký cho các thao tác khoá, huỷ chuyến, sửa cấu hình không?
+4. **Nhật ký thao tác.** Lý do khoá tài khoản hiện không có cột nào lưu, và xuất CSV bắt buộc phải có nhật ký. Nhóm có làm một bảng nhật ký chung cho khoá tài khoản, huỷ chuyến, sửa cấu hình và xuất dữ liệu không?
+5. **Chỉ số đi vòng.** Giữ hay bỏ, theo giải thích ở mục Tổng quan vận hành.

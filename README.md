@@ -38,7 +38,7 @@ Dữ liệu mẫu nằm trong bộ nhớ của server Next.js. Thao tác duyệt
 | Đường dẫn | Trang | API |
 | --- | --- | --- |
 | `/login` | Đăng nhập | Backend đã có (`signIn`) |
-| `/` | Tổng quan | Đề xuất |
+| `/` | Tổng quan vận hành: chỉ số theo kỳ 7, 14, 30 ngày, biểu đồ chuyến mỗi ngày, hàng đợi cần xử lý, chuyến gần đây, xuất CSV | Đề xuất |
 | `/verifications/drivers` | Duyệt CCCD và GPLX | Backend đã có |
 | `/verifications/vehicles` | Duyệt giấy đăng ký xe | Backend đã có |
 | `/users`, `/users/[id]` | Người dùng, khoá và mở khoá | Đề xuất |
@@ -51,6 +51,8 @@ Trang dùng dữ liệu mẫu có nhãn "Dữ liệu mẫu" cạnh tiêu đề.
 ## Hợp đồng API cho backend
 
 Các API "Đề xuất" là những query và mutation backend chưa có. Tên, tham số và kiểu trả về được định nghĩa tại `PROPOSED_SDL` trong [src/server/mock/schema.ts](src/server/mock/schema.ts). Backend triển khai đúng hợp đồng này thì admin web chuyển sang API thật bằng cách đặt `NEXT_PUBLIC_API_MOCK=off`, không phải sửa trang nào.
+
+Quy tắc nghiệp vụ và kiểm tra dữ liệu của từng API nằm ở [docs/backend-constraints.md](docs/backend-constraints.md).
 
 Hai việc backend cần làm ngoài 12 API trong hợp đồng:
 

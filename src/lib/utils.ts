@@ -28,6 +28,19 @@ const timeFormat = new Intl.DateTimeFormat("vi-VN", {
 
 const numberFormat = new Intl.NumberFormat("vi-VN");
 
+const shortDateTimeFormat = new Intl.DateTimeFormat("vi-VN", {
+  timeZone: TIME_ZONE,
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** Ngày giờ rút gọn không có năm, dùng trong bảng hẹp. */
+export function formatShortDateTime(value: string | null | undefined): string {
+  return value ? shortDateTimeFormat.format(new Date(value)) : "—";
+}
+
 export function formatDateTime(value: string | null | undefined): string {
   return value ? dateTimeFormat.format(new Date(value)) : "—";
 }
@@ -42,6 +55,19 @@ export function formatTime(value: string | null | undefined): string {
 
 export function formatNumber(value: number): string {
   return numberFormat.format(value);
+}
+
+const decimalFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 });
+
+/** Số có tối đa một chữ số thập phân, theo cách viết tiếng Việt (86,4). */
+export function formatDecimal(value: number): string {
+  return decimalFormat.format(value);
+}
+
+/** Số có dấu để diễn tả mức thay đổi: "+4,2%", "−0,2 km", "0%". */
+export function formatSigned(value: number, suffix: string): string {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${decimalFormat.format(Math.abs(value))}${suffix}`;
 }
 
 export function formatCurrency(value: number): string {

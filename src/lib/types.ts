@@ -144,6 +144,8 @@ export interface TripPricing {
 
 export interface Trip {
   id: string;
+  /** Mã ngắn để đọc và tra cứu, ví dụ RS-4821 (trường đề xuất). */
+  tripCode: string;
   status: TripStatus;
   driverId: string;
   driver: User | null;
@@ -155,6 +157,12 @@ export interface Trip {
   totalDurationMinutes: number;
   totalSeatsOffered: number;
   availableSeats: number;
+  /** Số ghế đã có khách giữ hoặc đã đi (trường đề xuất). */
+  bookedSeats: number;
+  /** Tỷ lệ trùng tuyến trung bình của các khách trên chuyến, 0-100 (trường đề xuất). */
+  averageMatchPercent: number | null;
+  /** Tổng chi phí các khách chia sẻ cho chuyến (trường đề xuất). */
+  sharedCostTotal: number | null;
   isInstantBooking: boolean;
   luggageAllowed: LuggageCapacity;
   driverNotes: string | null;
@@ -198,14 +206,50 @@ export interface Page<T> {
   pageSize: number;
 }
 
-export interface DashboardStats {
-  totalUsers: number;
-  newUsersLast7Days: number;
-  approvedDrivers: number;
-  pendingDriverVerifications: number;
-  pendingVehicleVerifications: number;
-  activeTrips: number;
-  openViolations: number;
-  tripsByStatus: { status: TripStatus; count: number }[];
-  signupsByDay: { date: string; count: number }[];
+export type OverviewKpiKey =
+  | "TOTAL_USERS"
+  | "ACTIVE_DRIVERS"
+  | "ACTIVE_PASSENGERS"
+  | "TRIPS_TODAY"
+  | "CONFIRMED_BOOKINGS"
+  | "COMPLETED_TRIPS"
+  | "CANCELLED_TRIPS"
+  | "AVERAGE_MATCH_RATE";
+
+export interface OverviewKpi {
+  key: OverviewKpiKey;
+  value: number;
+  /** Thay đổi so với kỳ liền trước; null khi kỳ trước không có dữ liệu. */
+  delta: number | null;
+  deltaUnit: "PERCENT" | "POINTS";
+  /** Giá trị theo từng khoảng thời gian trong kỳ, cũ trước mới sau. */
+  series: number[];
+  /** Số liệu phụ hiển thị dưới biểu đồ nhỏ; ý nghĩa tuỳ theo key. */
+  secondaryValue: number | null;
+}
+
+export interface OperationsOverview {
+  generatedAt: string;
+  rangeDays: number;
+  kpis: OverviewKpi[];
+  dailyTrips: { date: string; posted: number; completed: number }[];
+  funnel: {
+    searches: number;
+    matchedSearches: number;
+    bookingRequests: number;
+    approvedBookings: number;
+  };
+  matching: {
+    averageOverlapPercent: number;
+    overlapDeltaPoints: number | null;
+    averageDetourKm: number;
+    detourDeltaKm: number | null;
+  };
+  safety: {
+    pendingVerifications: number;
+    overdueVerifications: number;
+    openViolations: number;
+    passengerReportViolations: number;
+    usersToReview: number;
+  };
 }
