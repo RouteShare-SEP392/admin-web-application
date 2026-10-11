@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, ExternalLink, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
+import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
@@ -23,6 +24,10 @@ interface Props {
   error: string | null;
   onApprove: () => void;
   onReject: (reason: string) => void;
+  /** Vị trí của hồ sơ trong hàng chờ đang lọc, để chuyển qua lại mà không đóng hộp thoại. */
+  queue?: { index: number; total: number; onNavigate: (step: -1 | 1) => void };
+  /** Trang gom toàn bộ giấy tờ và phương tiện của tài xế này. */
+  profileHref?: string;
 }
 
 /** Hộp thoại xem xét một hồ sơ giấy tờ: xem ảnh, đối chiếu, duyệt hoặc từ chối. */
@@ -41,6 +46,8 @@ function ReviewContent({
   error,
   onApprove,
   onReject,
+  queue,
+  profileHref,
 }: Props) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
@@ -82,6 +89,43 @@ function ReviewContent({
         )
       }
     >
+      {queue || profileHref ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+          {queue ? (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label="Hồ sơ trước"
+                disabled={busy || queue.index === 0}
+                onClick={() => queue.onNavigate(-1)}
+              >
+                <ChevronLeft className="size-4" aria-hidden />
+              </Button>
+              <span className="text-muted tabular-nums">
+                Hồ sơ {queue.index + 1}/{queue.total}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label="Hồ sơ sau"
+                disabled={busy || queue.index >= queue.total - 1}
+                onClick={() => queue.onNavigate(1)}
+              >
+                <ChevronRight className="size-4" aria-hidden />
+              </Button>
+            </div>
+          ) : (
+            <span />
+          )}
+          {profileHref ? (
+            <Link href={profileHref} className="font-medium text-brand-700 hover:underline">
+              Xem toàn bộ hồ sơ tài xế
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <div className="space-y-4">
           {photos.map((photo) => (

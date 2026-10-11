@@ -26,7 +26,13 @@ import {
 import { DRIVER_DOCUMENT_TYPE } from "@/lib/labels";
 import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { DriverVerificationType, VerificationStatus } from "@/lib/types";
+import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { errorMessage, formatDate, formatDateTime } from "@/lib/utils";
+
+const DOCUMENT_TYPES = [
+  "IDENTITY_CARD",
+  "DRIVER_LICENSE",
+] as const satisfies readonly DriverVerificationType[];
 
 export function DriverVerificationsView() {
   const { data, loading, error, refetch } = useQuery(PENDING_DRIVER_VERIFICATIONS);
@@ -36,13 +42,16 @@ export function DriverVerificationsView() {
   });
   const notify = useToast();
 
-  const [search, setSearch] = useState("");
-  const [type, setType] = useState<DriverVerificationType | "">("");
+  // Bộ lọc nằm trên URL: /verifications/drivers?q=...&type=...
+  const url = useUrlState();
+  const type = url.getOption("type", DOCUMENT_TYPES);
+  const query = url.getText("q");
+  const [search, setSearch] = useUrlSearchText(query, (q) => url.setParams({ q }));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
   const all = data?.adminPendingDriverVerifications ?? [];
-  const keyword = search.trim().toLowerCase();
+  const keyword = query.toLowerCase();
   const rows = all.filter((doc) => {
     if (type && doc.type !== type) return false;
     if (!keyword) return true;
@@ -52,6 +61,15 @@ export function DriverVerificationsView() {
     );
   });
   const selected = all.find((doc) => doc.id === selectedId) ?? null;
+  const selectedIndex = rows.findIndex((doc) => doc.id === selectedId);
+
+  function navigate(step: -1 | 1) {
+    const target = rows[selectedIndex + step];
+    if (target) {
+      setReviewError(null);
+      setSelectedId(target.id);
+    }
+  }
 
   function closeDialog() {
     setSelectedId(null);
@@ -61,6 +79,8 @@ export function DriverVerificationsView() {
   async function submit(status: VerificationStatus, rejectionReason?: string) {
     if (!selected) return;
     setReviewError(null);
+    // Xác định hồ sơ kế tiếp trước khi hàng chờ được tải lại và hồ sơ này biến mất.
+    const next = rows[selectedIndex + 1] ?? rows[selectedIndex - 1] ?? null;
     try {
       await review({
         variables: { input: { verificationId: selected.id, status, rejectionReason } },
@@ -70,7 +90,8 @@ export function DriverVerificationsView() {
           ? `Đã phê duyệt ${DRIVER_DOCUMENT_TYPE[selected.type].toLowerCase()} của ${selected.driverProfile.user.fullName}.`
           : `Đã từ chối hồ sơ của ${selected.driverProfile.user.fullName}.`,
       );
-      closeDialog();
+      // Chuyển thẳng sang hồ sơ kế tiếp; hết hàng chờ thì đóng hộp thoại.
+      setSelectedId(next?.id ?? null);
     } catch (cause) {
       setReviewError(errorMessage(cause));
     }
@@ -103,7 +124,7 @@ export function DriverVerificationsView() {
           <Select
             aria-label="Loại giấy tờ"
             value={type}
-            onChange={(event) => setType(event.target.value as DriverVerificationType | "")}
+            onChange={(event) => url.setParams({ type: event.target.value })}
           >
             <option value="">Tất cả giấy tờ</option>
             <option value="IDENTITY_CARD">{DRIVER_DOCUMENT_TYPE.IDENTITY_CARD}</option>
@@ -139,7 +160,10 @@ export function DriverVerificationsView() {
               {rows.map((doc) => (
                 <Tr key={doc.id}>
                   <Td>
-                    <PersonCell person={doc.driverProfile.user} />
+                    <PersonCell
+                      person={doc.driverProfile.user}
+                      href={`/verifications/drivers/${doc.driverProfile.id}`}
+                    />
                   </Td>
                   <Td>
                     <span className="mr-2">{DRIVER_DOCUMENT_TYPE[doc.type]}</span>
@@ -173,6 +197,12 @@ export function DriverVerificationsView() {
         ]}
         busy={reviewing}
         error={reviewError}
+        queue={
+          selectedIndex >= 0
+            ? { index: selectedIndex, total: rows.length, onNavigate: navigate }
+            : undefined
+        }
+        profileHref={selected ? `/verifications/drivers/${selected.driverProfile.id}` : undefined}
         onApprove={() => submit("APPROVED")}
         onReject={(reason) => submit("REJECTED", reason)}
       >

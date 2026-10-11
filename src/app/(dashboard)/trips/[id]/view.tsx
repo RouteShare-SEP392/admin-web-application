@@ -3,10 +3,11 @@ import { TripMilestoneAudit } from "@/components/trip-monitoring/trip-milestone-
 import { TripChangeAudit } from "@/components/trip-operations/trip-change-audit";
 
 import { useMutation, useQuery } from "@apollo/client/react";
-import { ArrowLeft, Ban } from "lucide-react";
+import { Ban } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { BackLink } from "@/components/back-link";
 import { PersonCell } from "@/components/person-cell";
 import { RouteSketch } from "@/components/route-sketch";
 import { StatusBadge } from "@/components/ui/badge";
@@ -21,8 +22,9 @@ import {
   TableSkeleton,
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
-import { CANCEL_TRIP, TRIP_DETAIL } from "@/lib/graphql";
-import { LUGGAGE, STOP_TYPE, TRIP_STATUS, VEHICLE_TYPE } from "@/lib/labels";
+import { Table, Td, Th, Tr } from "@/components/ui/table";
+import { BOOKINGS, CANCEL_TRIP, TRIP_DETAIL } from "@/lib/graphql";
+import { BOOKING_STATUS, LUGGAGE, STOP_TYPE, TRIP_STATUS, VEHICLE_TYPE } from "@/lib/labels";
 import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { TripStop } from "@/lib/types";
 import {
@@ -50,7 +52,7 @@ export function TripDetailView() {
   if (!trip) {
     return (
       <>
-        <BackLink />
+        <BackLink href="/trips" label="Danh sách chuyến đi" />
         <Card>
           {loading ? (
             <TableSkeleton />
@@ -79,7 +81,7 @@ export function TripDetailView() {
 
   return (
     <>
-      <BackLink />
+      <BackLink href="/trips" label="Danh sách chuyến đi" />
 
       <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
@@ -244,8 +246,11 @@ export function TripDetailView() {
         </div>
       </div>
 
+      <TripPassengers tripId={trip.id} />
+
       <TripMilestoneAudit trip={trip} />
       <TripChangeAudit tripId={id} />
+
       <ReasonDialog
         open={cancelOpen}
         onClose={() => {
@@ -265,14 +270,66 @@ export function TripDetailView() {
   );
 }
 
-function BackLink() {
+/** Các đặt chỗ trên chuyến: ai đi chặng nào, trả bao nhiêu, đang ở trạng thái gì. */
+function TripPassengers({ tripId }: { tripId: string }) {
+  const { data, loading, error, refetch } = useQuery(BOOKINGS, {
+    // Một chuyến có ít ghế nên lấy hết đặt chỗ trong một trang.
+    variables: { input: { tripId, page: 1, pageSize: 50 } },
+  });
+  const result = data?.adminBookings;
+
   return (
-    <Link
-      href="/trips"
-      className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-brand-700"
-    >
-      <ArrowLeft className="size-4" aria-hidden />
-      Danh sách chuyến đi
-    </Link>
+    <Card className="mt-6">
+      <CardHeader title={result ? `Hành khách (${result.total})` : "Hành khách"} />
+      {!result && loading ? (
+        <TableSkeleton rows={2} />
+      ) : !result ? (
+        <ErrorState error={error} onRetry={() => refetch()} />
+      ) : result.total === 0 ? (
+        <p className="px-5 py-6 text-sm text-muted">Chưa có ai đặt chỗ trên chuyến này.</p>
+      ) : (
+        <Table>
+          <thead>
+            <tr>
+              <Th>Mã đặt chỗ</Th>
+              <Th>Hành khách</Th>
+              <Th>Chặng đi</Th>
+              <Th className="text-right">Khách trả</Th>
+              <Th>Trạng thái</Th>
+              <Th>Đặt lúc</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.items.map((booking) => (
+              <Tr key={booking.id}>
+                <Td>
+                  <Link
+                    href={`/bookings/${booking.id}`}
+                    className="font-semibold whitespace-nowrap text-brand-700 tabular-nums hover:underline"
+                  >
+                    {booking.bookingCode}
+                  </Link>
+                </Td>
+                <Td>
+                  <PersonCell person={booking.passenger} href={`/users/${booking.passenger.id}`} />
+                </Td>
+                <Td>
+                  {booking.pickupStop.stopName} → {booking.dropoffStop.stopName}
+                </Td>
+                <Td className="text-right whitespace-nowrap tabular-nums">
+                  {booking.totalAmount > 0 ? formatCurrency(booking.totalAmount) : "—"}
+                </Td>
+                <Td>
+                  <StatusBadge meta={BOOKING_STATUS[booking.status]} />
+                </Td>
+                <Td className="whitespace-nowrap text-muted">
+                  {formatDateTime(booking.requestedAt)}
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+    </Card>
   );
 }

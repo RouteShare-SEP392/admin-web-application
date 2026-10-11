@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { TRIP_STATUS } from "@/lib/labels";
 import { MOCK_MODE, MOCK_TOKEN_PREFIX, SESSION_COOKIE } from "@/server/config";
+import { recordAudit } from "@/server/mock/audit";
 import { vnDateKey } from "@/server/mock/overview";
 import { selectTrips, type TripFilter } from "@/server/mock/resolvers";
-import { getStore } from "@/server/mock/store";
 
 const HEADERS = [
   "Mã chuyến",
@@ -26,6 +26,13 @@ const FILTERS: Record<string, TripFilter> = {
   lowMatch: { lowMatchOnly: true },
   hasViolation: { hasViolation: true },
   today: { todayOnly: true },
+};
+
+const FILTER_LABELS: Record<string, string> = {
+  all: "tất cả",
+  lowMatch: "ghép dưới 70%",
+  hasViolation: "có vi phạm",
+  today: "hôm nay",
 };
 
 function fail(message: string, status: number) {
@@ -96,14 +103,13 @@ export async function GET(request: Request) {
   const adminId = token.startsWith(MOCK_TOKEN_PREFIX)
     ? token.slice(MOCK_TOKEN_PREFIX.length)
     : "backend-admin";
-  const entry = {
+  const entry = recordAudit(
     adminId,
-    exportedAt: new Date().toISOString(),
-    filters: { rangeDays, filter: filterKey },
-    rowCount: rows.length,
-  };
-  getStore().exportAudit.push(entry);
-  console.info("[audit] Xuất CSV chuyến đi", entry);
+    "DATA_EXPORTED",
+    { type: "EXPORT", id: null, label: "Danh sách chuyến đi (CSV)" },
+    `Kỳ ${rangeDays} ngày · bộ lọc: ${FILTER_LABELS[filterKey]} · ${rows.length} dòng`,
+  );
+  console.info("[audit] Xuất CSV chuyến đi", { adminId, detail: entry.detail });
 
   // BOM để Excel nhận đúng tiếng Việt có dấu.
   const csv =

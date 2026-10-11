@@ -17,14 +17,23 @@ import { Card, ErrorState, MockBadge, Skeleton } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { OPERATIONS_OVERVIEW, type RecentTripFilter } from "@/lib/graphql";
 import { isProposedApiMocked } from "@/lib/mock-mode";
+import { useUrlState } from "@/lib/use-url-state";
 import { cn, formatDateTime, formatNumber } from "@/lib/utils";
 
 const RANGES = [7, 14, 30] as const;
 type RangeDays = (typeof RANGES)[number];
+const RANGE_PARAMS = ["7", "14", "30"] as const;
+const TRIP_FILTERS = [
+  "lowMatch",
+  "hasViolation",
+  "today",
+] as const satisfies readonly RecentTripFilter[];
 
 export function DashboardView() {
-  const [rangeDays, setRangeDays] = useState<RangeDays>(14);
-  const [tripFilter, setTripFilter] = useState<RecentTripFilter>("all");
+  // Kỳ và bộ lọc chuyến nằm trên URL: /?range=30&filter=lowMatch
+  const url = useUrlState();
+  const rangeDays = (Number(url.getOption("range", RANGE_PARAMS)) || 14) as RangeDays;
+  const tripFilter = url.getOption("filter", TRIP_FILTERS) || "all";
   const [exporting, setExporting] = useState(false);
   const notify = useToast();
 
@@ -91,7 +100,7 @@ export function DashboardView() {
                 key={option}
                 type="button"
                 aria-pressed={rangeDays === option}
-                onClick={() => setRangeDays(option)}
+                onClick={() => url.setParams({ range: option === 14 ? null : option })}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
@@ -108,9 +117,9 @@ export function DashboardView() {
             <Download className="size-4" aria-hidden />
             {exporting ? "Đang xuất…" : "Xuất CSV"}
           </Button>
-          <Link href="/violations" className={buttonClass("primary")}>
+          <Link href="/reports" className={buttonClass("primary")}>
             <ShieldAlert className="size-4" aria-hidden />
-            Xem vi phạm
+            Xem báo cáo an toàn
           </Link>
         </div>
       </div>
@@ -141,7 +150,10 @@ export function DashboardView() {
             <SafetyQueueCard safety={overview.safety} />
           </div>
 
-          <RecentTrips filter={tripFilter} onFilterChange={setTripFilter} />
+          <RecentTrips
+            filter={tripFilter}
+            onFilterChange={(next) => url.setParams({ filter: next === "all" ? null : next })}
+          />
         </div>
       )}
     </>

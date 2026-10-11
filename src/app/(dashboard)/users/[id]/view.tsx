@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client/react";
-import { ArrowLeft, Lock, LockOpen, Star } from "lucide-react";
+import { Lock, LockOpen, Star } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { BackLink } from "@/components/back-link";
 import { Badge, StatusBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClass } from "@/components/ui/button";
 import { ReasonDialog } from "@/components/ui/dialog";
 import {
   Avatar,
@@ -18,6 +19,7 @@ import {
   TableSkeleton,
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
+import { BookingsCard, PostedTripsCard, ViolationsCard } from "./activity";
 import { SUSPEND_USER, UNSUSPEND_USER, USER_DETAIL } from "@/lib/graphql";
 import {
   DRIVER_DOCUMENT_TYPE,
@@ -44,7 +46,7 @@ export function UserDetailView() {
   if (!user) {
     return (
       <>
-        <BackLink />
+        <BackLink href="/users" label="Danh sách người dùng" />
         <Card>
           {loading ? <TableSkeleton /> : <ErrorState error={error} onRetry={() => refetch()} />}
         </Card>
@@ -76,7 +78,7 @@ export function UserDetailView() {
 
   return (
     <>
-      <BackLink />
+      <BackLink href="/users" label="Danh sách người dùng" />
 
       <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
         <div className="flex items-center gap-4">
@@ -149,7 +151,15 @@ export function UserDetailView() {
             title="Hồ sơ tài xế"
             action={
               profile ? (
-                <StatusBadge meta={VERIFICATION_STATUS[profile.verificationStatus]} />
+                <div className="flex flex-wrap items-center gap-3">
+                  <StatusBadge meta={VERIFICATION_STATUS[profile.verificationStatus]} />
+                  <Link
+                    href={`/verifications/drivers/${profile.id}`}
+                    className={buttonClass("secondary", "sm")}
+                  >
+                    Mở hồ sơ và giấy tờ
+                  </Link>
+                </div>
               ) : undefined
             }
           />
@@ -219,6 +229,10 @@ export function UserDetailView() {
             </div>
           )}
         </Card>
+
+        {profile ? <PostedTripsCard userId={user.id} /> : null}
+        {user.role === "USER" ? <BookingsCard userId={user.id} /> : null}
+        {profile ? <ViolationsCard userId={user.id} /> : null}
       </div>
 
       <ReasonDialog
@@ -237,18 +251,6 @@ export function UserDetailView() {
         onConfirm={handleSuspend}
       />
     </>
-  );
-}
-
-function BackLink() {
-  return (
-    <Link
-      href="/users"
-      className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-brand-700"
-    >
-      <ArrowLeft className="size-4" aria-hidden />
-      Danh sách người dùng
-    </Link>
   );
 }
 

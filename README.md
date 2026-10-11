@@ -41,10 +41,20 @@ Dữ liệu mẫu nằm trong bộ nhớ của server Next.js. Thao tác duyệt
 | `/` | Tổng quan vận hành: chỉ số theo kỳ 7, 14, 30 ngày, biểu đồ chuyến mỗi ngày, hàng đợi cần xử lý, chuyến gần đây, xuất CSV | Đề xuất |
 | `/verifications/drivers` | Duyệt CCCD và GPLX | Backend đã có |
 | `/verifications/vehicles` | Duyệt giấy đăng ký xe | Backend đã có |
-| `/users`, `/users/[id]` | Người dùng, khoá và mở khoá | Đề xuất |
+| `/verifications/drivers/[profileId]` | Hồ sơ tài xế: toàn bộ giấy tờ và xe của một tài xế, duyệt tại chỗ | Đề xuất (xem), backend đã có (duyệt) |
+| `/verifications/history` | Lịch sử xét duyệt: giấy tờ đã duyệt hoặc từ chối | Đề xuất |
+| `/users`, `/users/[id]` | Người dùng, khoá và mở khoá; lịch sử chuyến đã đăng, chuyến đã đặt, vi phạm | Đề xuất |
+| `/vehicles` | Tra cứu phương tiện theo biển số, hãng xe, chủ xe | Đề xuất |
 | `/trips`, `/trips/[id]` | Chuyến đi, huỷ chuyến | Đề xuất |
 | `/violations` | Vi phạm tài xế, tha vi phạm | Đề xuất |
+| `/bookings`, `/bookings/[id]` | Đặt chỗ: tra cứu, phần tính tiền, mốc thời gian | Đề xuất |
+| `/payments` | Thanh toán và đối soát | Đề xuất |
+| `/reports`, `/reports/[id]` | Báo cáo và khiếu nại: nhận xử lý, giải quyết, bác bỏ | Đề xuất |
+| `/sos` | Sự cố SOS: vị trí, liên hệ khẩn cấp, đóng sự cố | Đề xuất |
+| `/admins` | Quản trị viên: thêm, khoá, mở khoá | Đề xuất |
 | `/settings` | Cấu hình hệ thống | Đề xuất |
+| `/audit-log` | Nhật ký thao tác của quản trị viên | Đề xuất |
+| `/account` | Tài khoản của tôi: thông tin, đổi mật khẩu, thao tác gần đây | `me` đã có, đổi mật khẩu đề xuất |
 
 Trang dùng dữ liệu mẫu có nhãn "Dữ liệu mẫu" cạnh tiêu đề.
 
@@ -54,7 +64,7 @@ Các API "Đề xuất" là những query và mutation backend chưa có. Tên, 
 
 Quy tắc nghiệp vụ và kiểm tra dữ liệu của từng API nằm ở [docs/backend-constraints.md](docs/backend-constraints.md).
 
-Hai việc backend cần làm ngoài 12 API trong hợp đồng:
+Hai việc backend cần làm ngoài 27 API trong hợp đồng:
 
 - Chặn đăng nhập với tài khoản có `status = SUSPENDED`, nếu không thao tác khoá tài khoản không có tác dụng.
 - Có cách tạo tài khoản quản trị đầu tiên (script seed hoặc cập nhật `role` trong cơ sở dữ liệu).

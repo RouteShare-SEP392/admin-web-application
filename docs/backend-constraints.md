@@ -74,19 +74,52 @@ Ràng buộc khi chuyển sang đọc từ cấu hình:
 
 ## 3. Ràng buộc các API admin còn lại
 
+### Xét duyệt: lịch sử và hồ sơ tài xế
+
+Hai query `adminPending...` hiện có chỉ trả hồ sơ `PENDING`, nên hồ sơ đã xử lý không xem lại được. Ba API dưới đây bổ sung phần đó.
+
+| API | Ràng buộc |
+| --- | --- |
+| `adminDriverVerifications` | Lọc theo danh sách `statuses` (bỏ trống là mọi trạng thái) và `type`. `search` khớp họ tên, email, số điện thoại của tài xế hoặc số giấy tờ. Hồ sơ đã xử lý xếp theo `reviewedAt` mới nhất trước; hồ sơ chưa xử lý xếp theo `createdAt`. Trả kèm `reviewedBy` và `driverProfile.user`. |
+| `adminVehicleVerifications` | Như trên; `search` khớp biển số, hãng xe, dòng xe hoặc họ tên chủ xe. Trả kèm `vehicle.driverProfile.user`. |
+| `adminDriverProfile(id)` | `id` là id của `driver_profiles`. Trả hồ sơ kèm `user`, toàn bộ `verifications` và `vehicles`, mỗi xe kèm `verifications` của nó. Không tìm thấy: lỗi "Không tìm thấy hồ sơ tài xế." |
+
+Quyền đọc ảnh và số giấy tờ đã giới hạn cho chủ hồ sơ và `ADMIN`; ba API này phải giữ nguyên giới hạn đó, kể cả với hồ sơ đã bị từ chối.
+
+Trang hồ sơ tài xế cho phép duyệt giấy tờ ngay tại chỗ bằng hai mutation `adminReview...` hiện có. Hai lỗi của các mutation đó cần sửa để trang hoạt động đúng:
+
+- **Giấy tờ xe bị kẹt khi sai hạng bằng lái.** `adminReviewVehicleVerification` lưu giấy tờ thành `APPROVED` trước rồi mới kiểm tra hạng GPLX. Khi kiểm tra thất bại, giấy tờ đã là `APPROVED` nhưng xe chưa được duyệt, và hồ sơ biến mất khỏi hàng chờ. Cần kiểm tra trước khi lưu, hoặc gói cả hai bước trong một transaction.
+- **Duyệt lại hồ sơ đã xử lý.** Cả hai mutation không kiểm tra trạng thái hiện tại và nhận mọi giá trị của `VerificationStatus`. Chỉ nên nhận `APPROVED` hoặc `REJECTED`, và chỉ với hồ sơ đang `PENDING`.
+
 ### Người dùng
 
 | API | Ràng buộc |
 | --- | --- |
 | `adminUsers` | Lọc theo `role`, `status`; `search` khớp họ tên, email hoặc số điện thoại. Sắp xếp mới tạo trước. Trả kèm `driverProfile.verificationStatus`. |
 | `adminUser` | Không tìm thấy: lỗi "Không tìm thấy người dùng." Trả kèm hồ sơ tài xế, danh sách giấy tờ và phương tiện. |
-| `adminSuspendUser` | Chỉ áp dụng cho tài khoản `ACTIVE`. Không khoá được tài khoản `ADMIN`. Bắt buộc có lý do. |
+| `adminSuspendUser` | Chỉ áp dụng cho tài khoản `ACTIVE`. Bắt buộc có lý do. Với tài khoản `ADMIN`: không tự khoá chính mình, và không khoá quản trị viên đang hoạt động cuối cùng. |
 | `adminUnsuspendUser` | Chỉ áp dụng cho tài khoản `SUSPENDED`; không dùng để khôi phục tài khoản `DEACTIVATED`. |
 
 Khoá tài khoản chỉ có ý nghĩa khi backend đồng thời:
 
 - Từ chối `signIn` và `loginWithGoogle` với tài khoản `SUSPENDED`, kèm thông báo tiếng Việt.
 - Từ chối các request dùng JWT đã cấp trước khi bị khoá. JWT hiện có hạn 7 ngày, nên cần kiểm tra `status` trong `JwtStrategy` hoặc guard.
+
+### Phương tiện
+
+| API | Ràng buộc |
+| --- | --- |
+| `adminVehicles` | Lọc theo `vehicleType`, `verificationStatus`. `search` khớp biển số, hãng xe, dòng xe hoặc họ tên chủ xe. Sắp xếp mới đăng ký trước. Trả kèm `driverProfile.user`. Thấy được xe ở mọi trạng thái, kể cả xe chủ xe đã tắt (`isActive = false`). |
+
+### Lịch sử của một người dùng
+
+Trang chi tiết người dùng hiển thị ba bảng lịch sử, mỗi bảng 5 dòng một trang.
+
+| Bảng | API | Ràng buộc |
+| --- | --- | --- |
+| Chuyến đã đăng | `adminTrips` với `driverId` | `driverId` là id của `users`. |
+| Vi phạm | `adminDriverViolations` với `driverId` | Trả cả vi phạm đã tha. |
+| Chuyến đã đặt | `adminBookings` với `passengerId` | Xem mục Đặt chỗ. |
 
 ### Chuyến đi
 
@@ -128,7 +161,7 @@ Tha một vi phạm `NO_SHOW_WITH_PASSENGERS` phải hoàn tác hậu quả củ
 | Chuyến | Không tính chuyến `DRAFT`. Chuyến được xếp vào ngày theo giờ khởi hành, múi giờ `Asia/Ho_Chi_Minh`. |
 | `dailyTrips` | Đúng `rangeDays` phần tử, ngày không có chuyến trả 0. |
 | Đặt chỗ | "Đã xác nhận" gồm `CONFIRMED` và `COMPLETED`. "Phản hồi dưới 15 phút" tính từ lúc khách gửi yêu cầu đến lúc tài xế duyệt hoặc từ chối. |
-| `safety` | `pendingVerifications` khớp với tổng số phần tử của hai query danh sách chờ duyệt. `overdueVerifications` là hồ sơ chờ quá 24 giờ. |
+| `safety` | `pendingVerifications` khớp với tổng số phần tử của hai query danh sách chờ duyệt. `overdueVerifications` là hồ sơ chờ quá 24 giờ. `openReports` là báo cáo `OPEN`, `overdueReports` là báo cáo `OPEN` quá 24 giờ, `unresolvedSos` là sự cố chưa có `resolvedAt`. |
 
 Các số liệu backend chưa có nguồn dữ liệu:
 
@@ -155,10 +188,118 @@ Admin web hiện tự tạo file từ dữ liệu mẫu tại `GET /api/export/t
 | File lớn | Trên một ngưỡng số dòng do nhóm chốt, không trả file trực tiếp mà gửi qua email công ty của admin. Admin web chưa làm nhánh này. |
 | Định dạng | UTF-8 có BOM để Excel đọc đúng tiếng Việt. Ô bắt đầu bằng `=`, `+`, `-`, `@` phải được thêm dấu nháy đơn phía trước để không bị hiểu là công thức. |
 
+### Đặt chỗ
+
+Phụ thuộc module đặt chỗ chưa có. Tên trường của `AdminBooking` bám theo bảng `bookings` trong DBML; nếu thiết kế thật khác đi thì báo để admin web sửa theo.
+
+| API | Ràng buộc |
+| --- | --- |
+| `adminBookings` | Lọc theo `status`, `tripId`, `passengerId`. `search` khớp mã đặt chỗ, mã chuyến hoặc họ tên hành khách. Mới đặt trước. Trả mọi trạng thái, kể cả bị từ chối và hết hạn. |
+| `adminBooking` | Trả kèm `passenger`, `trip`, `pickupStop`, `dropoffStop` và `payment` (null nếu chưa có). |
+
+- `pickupStop` và `dropoffStop` là điểm lên và xuống của khách, không phải điểm đầu và cuối của chuyến.
+- Phần tiền phải thoả đúng công thức trong tài liệu kiến trúc: `totalAmount = baseAmount - discountAmount`, `platformFee` tính trên `baseAmount`, `driverEarnings = totalAmount - platformFee`. Admin web hiển thị cả năm số và không tự tính lại.
+- `fareStatus = ESTIMATED` cho tới khi chuyến kết thúc; sau đó là `FINALIZED` và các số tiền không đổi nữa.
+- Quản trị viên chỉ xem. Không có API đặt, sửa hay huỷ đặt chỗ thay người dùng.
+
+### Thanh toán
+
+| Hạng mục | Ràng buộc của `adminPayments` |
+| --- | --- |
+| Bộ lọc | `status`, `method`. `search` khớp mã đặt chỗ, mã giao dịch hoặc họ tên người trả. Mới tạo trước. |
+| `summary` | Tính trên toàn bộ kết quả lọc, không chỉ trang đang xem. `paidAmount` và `platformFee` chỉ cộng giao dịch `PAID`. |
+| Đối soát | `settlementStatus` lấy từ bảng `settlements`; null với tiền mặt vì khách đưa thẳng cho tài xế. |
+| Thao tác | Chỉ xem. Tài liệu kiến trúc ghi rõ không có ví nội bộ, nên không có API hoàn tiền hay sửa giao dịch. |
+
+### Báo cáo và khiếu nại
+
+| API | Ràng buộc |
+| --- | --- |
+| `adminReports` | Lọc theo `status`. `search` khớp loại báo cáo, họ tên người báo cáo hoặc người bị báo cáo. Mới gửi trước. |
+| `adminReport` | Trả kèm `reporter`, `reportedUser` (có `status` để biết đã bị khoá chưa), `trip`. |
+| `adminUpdateReportStatus` | Xem bảng chuyển trạng thái bên dưới. |
+
+| Từ | Sang | Điều kiện |
+| --- | --- | --- |
+| `OPEN` | `UNDER_REVIEW` | Không cần ghi chú. |
+| `OPEN`, `UNDER_REVIEW` | `RESOLVED`, `REJECTED` | Bắt buộc `note` tối thiểu 5 ký tự. Ghi `resolvedBy`, `resolvedAt`. |
+| `RESOLVED`, `REJECTED` | bất kỳ | Từ chối: "Báo cáo này đã được đóng." |
+
+- Cần thêm cột ghi chú xử lý vào bảng `reports` (admin web gọi là `resolutionNote`); DBML hiện chưa có.
+- Đóng báo cáo không tự động khoá tài khoản. Quản trị viên khoá riêng ở trang người dùng, để hai quyết định có hai dòng nhật ký riêng.
+- Cột `type` trong DBML là `varchar` tự do. Nếu app mobile cho chọn từ danh sách cố định thì nên đổi thành enum để lọc và thống kê được.
+
+### SOS
+
+| API | Ràng buộc |
+| --- | --- |
+| `adminSosEvents` | `resolved` lọc theo đã hoặc chưa xử lý. Sự cố chưa xử lý luôn xếp trên cùng, sau đó mới theo thời gian. Trả kèm `user`, `trip` (có `driver`), và `emergencyContacts` đang bật của người bấm. |
+| `adminResolveSosEvent` | Bắt buộc `notes` tối thiểu 5 ký tự. Sự cố đã đóng thì báo lỗi "Sự cố này đã được xử lý." Ghi `resolvedAt` và người xử lý. |
+
+- Cần thêm cột người xử lý vào `sos_events` (admin web gọi là `resolvedBy`); DBML hiện chỉ có `resolved_at` và `notes`.
+- `latitude`, `longitude` tách từ `current_location`. Admin web hiện toạ độ và link Google Maps, chưa có bản đồ nhúng.
+- Admin web hỏi lại danh sách mỗi 30 giây. Khi có sự cố mới, backend nên gửi thêm thông báo đẩy cho quản trị viên; không nên chỉ dựa vào việc có người đang mở trang.
+- Số điện thoại của người dùng, tài xế và liên hệ khẩn cấp được trả đầy đủ ở API này, vì quản trị viên phải gọi ngay.
+
+### Quản trị viên
+
+Danh sách dùng `adminUsers` với `role = ADMIN`; khoá và mở khoá dùng `adminSuspendUser`, `adminUnsuspendUser`.
+
+| Hạng mục | Ràng buộc của `adminCreateAdmin` |
+| --- | --- |
+| Kiểm tra | Họ tên tối thiểu 2 ký tự. Email đúng định dạng và chưa được dùng: lỗi "Email này đã được dùng cho một tài khoản khác." Mật khẩu tối thiểu 8 ký tự. |
+| Kết quả | Tạo tài khoản `role = ADMIN`, `status = ACTIVE`. Không gửi mật khẩu qua email; quản trị viên tạo tự chuyển cho người mới. |
+| Nhật ký | Ghi `ADMIN_CREATED`, không ghi mật khẩu. |
+
+Nên buộc người mới đổi mật khẩu ở lần đăng nhập đầu; admin web chưa có luồng này.
+
+### Nhật ký thao tác
+
+`adminAuditLogs` trả các dòng nhật ký, mới nhất trước. Lọc theo `action`, `actorId`; `search` khớp tên đối tượng, tên người thực hiện và chi tiết.
+
+| Hạng mục | Ràng buộc |
+| --- | --- |
+| Thời điểm ghi | Trong cùng transaction với thao tác. Thao tác thất bại thì không có dòng nhật ký; thao tác thành công thì luôn có. |
+| Bất biến | Chỉ thêm. Không có API sửa hay xoá, kể cả cho `ADMIN`. |
+| Người thực hiện | Lấy từ `@CurrentUser()`, không nhận từ client. |
+| `targetLabel` | Lưu tên đối tượng tại thời điểm thao tác (ví dụ "GPLX của Nguyễn Văn An"), để nhật ký vẫn đọc được khi đối tượng bị đổi tên hoặc xoá. |
+| `detail` | Lý do với thao tác có lý do; "giá trị cũ → giá trị mới" với sửa cấu hình; kỳ, bộ lọc và số dòng với xuất dữ liệu. Không ghi mật khẩu, token hay số giấy tờ. |
+
+Các thao tác phải ghi nhật ký, theo `AdminAuditAction`:
+
+| Thao tác | `targetType` | `targetId` |
+| --- | --- | --- |
+| Duyệt, từ chối giấy tờ tài xế | `DRIVER_PROFILE` | id hồ sơ tài xế |
+| Duyệt, từ chối giấy tờ xe | `DRIVER_PROFILE` | id hồ sơ tài xế của chủ xe |
+| Khoá, mở khoá tài khoản | `USER` | id người dùng |
+| Huỷ chuyến | `TRIP` | id chuyến |
+| Tha vi phạm | `VIOLATION` | id vi phạm |
+| Sửa cấu hình | `SETTING` | id cấu hình |
+| Xuất dữ liệu | `EXPORT` | null |
+| Đổi mật khẩu | `ACCOUNT` | null |
+| Nhận, giải quyết, bác bỏ báo cáo | `REPORT` | id báo cáo |
+| Đóng sự cố SOS | `SOS` | id sự cố |
+| Thêm quản trị viên | `USER` | id tài khoản mới |
+
+Bốn mutation duyệt KYC hiện có cũng cần ghi nhật ký; hiện chúng chỉ lưu `reviewedBy` trên giấy tờ.
+
+### Tài khoản của tôi
+
+Trang dùng `me` (đã có) và `changePassword` (chưa có; backend hiện chỉ có luồng đặt lại mật khẩu qua OTP email).
+
+| Hạng mục | Ràng buộc của `changePassword` |
+| --- | --- |
+| Phạm vi | Đổi mật khẩu của chính người đang đăng nhập; dùng được cho mọi vai trò, không riêng `ADMIN`. |
+| Kiểm tra | Mật khẩu hiện tại phải đúng: lỗi "Mật khẩu hiện tại không đúng." Mật khẩu mới tối thiểu 8 ký tự và khác mật khẩu hiện tại. |
+| Chống dò | Giới hạn số lần thử sai mật khẩu hiện tại, tương tự giới hạn OTP đang có. |
+| Phiên cũ | Sau khi đổi, các JWT cấp trước đó nên mất hiệu lực. Hiện backend không có cơ chế thu hồi token, đây là điểm cần làm cùng lúc. |
+| Tài khoản Google | Tài khoản tạo bằng Google không có mật khẩu: trả lỗi nêu rõ thay vì báo sai mật khẩu. |
+| Nhật ký | Ghi `PASSWORD_CHANGED`, không ghi mật khẩu. |
+
 ## 4. Điểm cần nhóm chốt
 
 1. **Khoảng giá mỗi km.** Tài liệu kiến trúc ghi 800 đến 2.500 đồng, code đang cho phép 500 đến 3.000. Giá trị seed cho `MIN_COST_PER_KM` và `MAX_COST_PER_KM` theo bên nào?
 2. **Bán kính tìm chuyến.** Admin web đang để mẫu 3.000 mét, code dùng mặc định 5 km. Ngoài ra `searchTrips` đang nhận `maxPickupRadiusKm` và `maxDropoffRadiusKm` từ client; cấu hình là giá trị mặc định hay giới hạn trên?
 3. **Mức phạt theo số lần bỏ chuyến.** Hiện là tạm khoá 24 giờ ở lần 1, 72 giờ ở lần 2, thu hồi ở lần 3. Nếu `NO_SHOW_STRIKE_LIMIT` đổi thành 5 thì các lần 3 và 4 xử lý thế nào?
-4. **Nhật ký thao tác.** Lý do khoá tài khoản hiện không có cột nào lưu, và xuất CSV bắt buộc phải có nhật ký. Nhóm có làm một bảng nhật ký chung cho khoá tài khoản, huỷ chuyến, sửa cấu hình và xuất dữ liệu không?
+4. **Nhật ký thao tác.** Lý do khoá tài khoản hiện không có cột nào lưu, và xuất CSV bắt buộc phải có nhật ký. Admin web đã có trang Nhật ký với hợp đồng `adminAuditLogs`; nhóm xác nhận làm một bảng nhật ký chung theo hợp đồng đó, hay đề xuất cấu trúc khác?
 5. **Chỉ số đi vòng.** Giữ hay bỏ, theo giải thích ở mục Tổng quan vận hành.

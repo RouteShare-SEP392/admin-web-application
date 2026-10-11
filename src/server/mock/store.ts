@@ -1,4 +1,11 @@
+import { MOCK_ADMIN_CREDENTIALS } from "@/lib/mock-mode";
 import type {
+  AuditLog,
+  EmergencyContact,
+  PaymentMethod,
+  PaymentStatus,
+  ReportStatus,
+  SettlementStatus,
   DriverProfile,
   DriverVerification,
   DriverViolation,
@@ -29,7 +36,13 @@ export interface MockStore {
   violations: DriverViolation[];
   settings: SystemSetting[];
   bookings: MockBooking[];
-  exportAudit: ExportAuditEntry[];
+  auditLogs: AuditLog[];
+  /** Mật khẩu của các tài khoản quản trị mẫu, theo id người dùng. */
+  credentials: Record<string, string>;
+  payments: MockPayment[];
+  reports: MockReport[];
+  sosEvents: MockSosEvent[];
+  emergencyContacts: (EmergencyContact & { userId: string })[];
 }
 
 export type BookingStatus =
@@ -43,6 +56,8 @@ export type BookingStatus =
 /** Đặt chỗ rút gọn: backend chưa có module booking, lớp mock chỉ giữ đủ để tính chỉ số. */
 export interface MockBooking {
   id: string;
+  /** Mã ngắn để đọc và tra cứu, ví dụ BK-20417. */
+  code: string;
   tripId: string;
   passengerId: string;
   seats: number;
@@ -57,12 +72,43 @@ export interface MockBooking {
   amount: number;
 }
 
-/** Nhật ký mỗi lần xuất CSV: ai, lúc nào, bộ lọc gì, bao nhiêu dòng. */
-export interface ExportAuditEntry {
-  adminId: string;
-  exportedAt: string;
-  filters: Record<string, string | number>;
-  rowCount: number;
+/** Thanh toán rút gọn; số tiền được suy ra từ đặt chỗ khi trả về cho giao diện. */
+export interface MockPayment {
+  id: string;
+  bookingId: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  transactionReference: string | null;
+  createdAt: number;
+  paidAt: number | null;
+  settlementStatus: SettlementStatus | null;
+  settledAt: number | null;
+}
+
+export interface MockReport {
+  id: string;
+  reporterId: string;
+  reportedUserId: string;
+  tripId: string | null;
+  type: string;
+  description: string;
+  status: ReportStatus;
+  resolutionNote: string | null;
+  resolvedById: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+
+export interface MockSosEvent {
+  id: string;
+  userId: string;
+  tripId: string | null;
+  latitude: number;
+  longitude: number;
+  triggeredAt: string;
+  resolvedAt: string | null;
+  resolvedById: string | null;
+  notes: string | null;
 }
 
 /** Đặt chỗ đang giữ ghế hoặc đã đi xong. */
@@ -491,6 +537,7 @@ function createStore(): MockStore {
       const responseMinutes = rand() < 0.78 ? between(1, 14) : between(16, 180);
       tripBookings.push({
         id: mockId("b0000000", bookings.length + tripBookings.length + 1),
+        code: `BK-${20001 + bookings.length + tripBookings.length}`,
         tripId: mockId("t0000000", i + 1),
         passengerId: pick(passengerIds),
         seats: 1,
@@ -652,6 +699,15 @@ function createStore(): MockStore {
   addTrip(now - 40 * 60_000);
   addTrip(now - 15 * 60_000);
 
+  // Số chuyến đã đi của mỗi hành khách khớp với lịch sử đặt chỗ của họ.
+  for (const user of users) {
+    if (passengerIds.includes(user.id)) {
+      user.totalRidesAsPassenger = bookings.filter(
+        (b) => b.passengerId === user.id && b.status === "COMPLETED",
+      ).length;
+    }
+  }
+
   [...trips]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .forEach((trip, order) => {
@@ -708,6 +764,114 @@ function createStore(): MockStore {
     },
   );
 
+  // ----- Thanh toán: mỗi đặt chỗ đã đi xong có một lần thanh toán sau chuyến -----
+  const tripsById = new Map(trips.map((trip) => [trip.id, trip]));
+  const payments: MockPayment[] = [];
+  for (const booking of bookings) {
+    if (booking.status !== "COMPLETED") continue;
+    const arrival = Date.parse(tripsById.get(booking.tripId)!.estimatedArrivalTime);
+    const createdAt = arrival + 5 * 60_000;
+    const method = pick<PaymentMethod>(["VIETQR", "VIETQR", "MOMO", "CASH"]);
+    const roll = rand();
+    const status: PaymentStatus =
+      roll < 0.03 ? "FAILED" : arrival > now - 6 * HOUR && roll < 0.5 ? "PENDING" : "PAID";
+    const paidAt = status === "PAID" ? createdAt + between(1, 90) * 60_000 : null;
+    const settled = paidAt !== null && method !== "CASH" && paidAt < now - DAY;
+    payments.push({
+      id: mockId("p0000000", payments.length + 1),
+      bookingId: booking.id,
+      method,
+      status,
+      transactionReference:
+        method === "CASH" ? null : `${method}${pad(between(1, 99999999), 8)}`,
+      createdAt,
+      paidAt,
+      settlementStatus:
+        method === "CASH" || paidAt === null ? null : settled ? "SETTLED" : "PENDING",
+      settledAt: settled ? paidAt! + DAY : null,
+    });
+  }
+
+  // ----- Báo cáo của người dùng -----
+  const REPORT_PLAN: [ReportStatus, number, string, string, boolean][] = [
+    ["OPEN", 2, "Lái xe không an toàn", "Tài xế vượt ẩu và dùng điện thoại khi đang chạy trên cao tốc.", false],
+    ["OPEN", 5, "Đến trễ", "Tài xế đến điểm đón trễ hơn 30 phút và không báo trước.", false],
+    ["OPEN", 9, "Thái độ không phù hợp", "Hành khách to tiếng và đòi dừng xe ngoài điểm đã hẹn.", true],
+    ["OPEN", 30, "Yêu cầu trả thêm tiền", "Tài xế yêu cầu trả thêm tiền mặt ngoài số tiền trên ứng dụng.", false],
+    ["OPEN", 50, "Không đến điểm đón", "Tôi chờ ở điểm đón 40 phút nhưng tài xế không tới và không nghe máy.", false],
+    ["UNDER_REVIEW", 28, "Lái xe không an toàn", "Xe chạy quá tốc độ suốt chặng, tôi đã nhắc nhưng tài xế không giảm.", false],
+    ["UNDER_REVIEW", 40, "Huỷ sát giờ", "Hành khách huỷ khi tôi đã tới điểm đón.", true],
+    ["RESOLVED", 96, "Yêu cầu trả thêm tiền", "Tài xế thu thêm 50.000đ tiền gửi xe.", false],
+    ["RESOLVED", 150, "Thái độ không phù hợp", "Tài xế nói chuyện thiếu tôn trọng với hành khách nữ.", false],
+    ["RESOLVED", 220, "Đến trễ", "Tài xế tới trễ 20 phút.", false],
+    ["REJECTED", 130, "Xe không đúng mô tả", "Xe tới đón khác màu so với thông tin trên ứng dụng.", false],
+    ["REJECTED", 300, "Thái độ không phù hợp", "Hành khách không chào hỏi.", true],
+  ];
+  const reportable = bookings.filter((b) => b.status === "COMPLETED").slice(-80);
+  const reports: MockReport[] = REPORT_PLAN.map(
+    ([status, hoursAgo, type, description, byDriver], i) => {
+      const booking = reportable[(i * 7 + 3) % reportable.length];
+      const trip = tripsById.get(booking.tripId)!;
+      const createdAt = now - hoursAgo * HOUR;
+      const closed = status === "RESOLVED" || status === "REJECTED";
+      return {
+        id: mockId("r0000000", i + 1),
+        reporterId: byDriver ? trip.driverId : booking.passengerId,
+        reportedUserId: byDriver ? booking.passengerId : trip.driverId,
+        tripId: trip.id,
+        type,
+        description,
+        status,
+        resolutionNote: !closed
+          ? null
+          : status === "RESOLVED"
+            ? "Đã liên hệ hai bên, xác nhận đúng sự việc và nhắc nhở người bị báo cáo."
+            : "Không đủ căn cứ: nội dung báo cáo không vi phạm quy định của nền tảng.",
+        resolvedById: closed ? admin.id : null,
+        resolvedAt: closed ? iso(createdAt + 20 * HOUR) : null,
+        createdAt: iso(createdAt),
+      };
+    },
+  );
+
+  // ----- Sự cố SOS và liên hệ khẩn cấp -----
+  const RELATIONSHIPS = ["Mẹ", "Bố", "Vợ", "Chồng", "Anh trai", "Chị gái", "Bạn thân"];
+  const emergencyContacts = users.slice(1).flatMap((user, i) =>
+    Array.from({ length: 1 + (i % 2) }, (_, n) => ({
+      id: mockId("ec000000", i * 2 + n + 1),
+      userId: user.id,
+      name: NAMES[(i * 3 + n * 5 + 7) % NAMES.length],
+      phone: `09${pad(10000000 + between(0, 89999999), 8)}`,
+      relationship: RELATIONSHIPS[(i + n * 3) % RELATIONSHIPS.length],
+    })),
+  );
+  const runningTrip = trips.find((t) => t.status === "IN_PROGRESS" && t.bookedSeats > 0);
+  const SOS_PLAN: [number, string | null][] = [
+    [12, null],
+    [26 * 60, "Đã gọi cho hành khách: xe bị thủng lốp trên cao tốc, tài xế đã thay lốp và đi tiếp an toàn."],
+    [4 * 24 * 60, "Hành khách bấm nhầm khi cất điện thoại. Đã gọi xác nhận, không có sự cố."],
+    [9 * 24 * 60, "Va chạm nhẹ với xe máy, không ai bị thương. Đã liên hệ cả tài xế và người thân của hành khách."],
+  ];
+  const sosEvents: MockSosEvent[] = SOS_PLAN.map(([minutesAgo, notes], i) => {
+    const trip = i === 0 && runningTrip ? runningTrip : tripsById.get(reportable[i * 11].tripId)!;
+    const rider = bookings.find((b) => b.tripId === trip.id && isActiveBooking(b.status));
+    // Vị trí nằm giữa hai điểm dừng đầu của chuyến.
+    const [from, to] = trip.stops;
+    const progress = 0.3 + i * 0.15;
+    const triggeredAt = now - minutesAgo * 60_000;
+    return {
+      id: mockId("so000000", i + 1),
+      userId: rider?.passengerId ?? trip.driverId,
+      tripId: trip.id,
+      latitude: Number((from.latitude + (to.latitude - from.latitude) * progress).toFixed(5)),
+      longitude: Number((from.longitude + (to.longitude - from.longitude) * progress).toFixed(5)),
+      triggeredAt: iso(triggeredAt),
+      resolvedAt: notes ? iso(triggeredAt + 25 * 60_000) : null,
+      resolvedById: notes ? admin.id : null,
+      notes,
+    };
+  });
+
   const settingRows: [string, string, string][] = [
     ["PLATFORM_FEE_PERCENT", "10", "Phí nền tảng tính trên giá gốc, trừ vào phần của tài xế"],
     ["MIN_COST_PER_KM", "800", "Giá sàn chia sẻ chi phí cho mỗi km, mỗi ghế"],
@@ -736,13 +900,81 @@ function createStore(): MockStore {
     violations,
     settings,
     bookings,
-    exportAudit: [],
+    auditLogs: seedAuditLogs(admin, driverVerifications, vehicleVerifications, violations, users),
+    credentials: { [admin.id]: MOCK_ADMIN_CREDENTIALS.password },
+    payments,
+    reports,
+    sosEvents,
+    emergencyContacts,
   };
+}
+
+/** Dựng nhật ký ban đầu từ các quyết định đã có sẵn trong dữ liệu mẫu. */
+function seedAuditLogs(
+  admin: User,
+  driverDocs: DriverVerification[],
+  vehicleDocs: VehicleVerification[],
+  violations: DriverViolation[],
+  users: User[],
+): AuditLog[] {
+  const entries: Omit<AuditLog, "id" | "actor">[] = [];
+  for (const doc of driverDocs) {
+    if (!doc.reviewedAt) continue;
+    const kind = doc.type === "IDENTITY_CARD" ? "CCCD" : "GPLX";
+    entries.push({
+      action: doc.status === "REJECTED" ? "DRIVER_DOCUMENT_REJECTED" : "DRIVER_DOCUMENT_APPROVED",
+      targetType: "DRIVER_PROFILE",
+      targetId: doc.driverProfile.id,
+      targetLabel: `${kind} của ${doc.driverProfile.user.fullName}`,
+      detail: doc.rejectReason,
+      createdAt: doc.reviewedAt,
+    });
+  }
+  for (const doc of vehicleDocs) {
+    if (!doc.reviewedAt) continue;
+    entries.push({
+      action:
+        doc.status === "REJECTED" ? "VEHICLE_DOCUMENT_REJECTED" : "VEHICLE_DOCUMENT_APPROVED",
+      targetType: "DRIVER_PROFILE",
+      targetId: doc.vehicle.driverProfile.id,
+      targetLabel: `Giấy đăng ký xe ${doc.vehicle.plateNumber}`,
+      detail: doc.rejectReason,
+      createdAt: doc.reviewedAt,
+    });
+  }
+  for (const violation of violations) {
+    if (!violation.isForgiven) continue;
+    entries.push({
+      action: "VIOLATION_FORGIVEN",
+      targetType: "VIOLATION",
+      targetId: violation.id,
+      targetLabel: `Vi phạm của ${violation.driver.fullName}`,
+      detail: violation.forgivenReason,
+      // Dữ liệu mẫu không lưu thời điểm tha: lấy một ngày sau khi ghi nhận vi phạm.
+      createdAt: new Date(Date.parse(violation.createdAt) + DAY).toISOString(),
+    });
+  }
+  for (const user of users) {
+    if (user.status !== "SUSPENDED") continue;
+    const suspendedAt = new Date(Date.parse(user.createdAt) + 6 * DAY).toISOString();
+    user.updatedAt = suspendedAt;
+    entries.push({
+      action: "USER_SUSPENDED",
+      targetType: "USER",
+      targetId: user.id,
+      targetLabel: user.fullName,
+      detail: "Nhiều hành khách phản ánh thái độ không phù hợp.",
+      createdAt: suspendedAt,
+    });
+  }
+  return entries
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((entry, index) => ({ ...entry, id: mockId("al000000", index + 1), actor: admin }));
 }
 
 // Giữ kho trên globalThis để không bị tạo lại mỗi lần Next.js biên dịch lại module.
 // Tăng SEED_VERSION khi đổi cấu trúc dữ liệu mẫu, để server dev đang chạy tạo kho mới.
-const SEED_VERSION = 2;
+const SEED_VERSION = 5;
 const globalStore = globalThis as typeof globalThis & {
   __routeshareMockStore?: { version: number; store: MockStore };
 };

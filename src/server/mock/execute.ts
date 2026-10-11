@@ -1,6 +1,7 @@
 import { buildSchema, graphql, Kind, parse, type GraphQLSchema } from "graphql";
 import { MOCK_MODE } from "../config";
-import { rootValue, type MockContext } from "./resolvers";
+import type { MockContext } from "./resolvers";
+import { rootValue } from "./root";
 import { EXISTING_SDL, PROPOSED_ROOT_FIELDS, PROPOSED_SDL } from "./schema";
 
 export interface GraphQLRequestBody {
