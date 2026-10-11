@@ -26,6 +26,7 @@ import {
 import { VEHICLE_TYPE, VERIFICATION_STATUS } from "@/lib/labels";
 import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { VerificationStatus } from "@/lib/types";
+import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { errorMessage, formatDateTime } from "@/lib/utils";
 
 export function VehicleVerificationsView() {
@@ -36,12 +37,15 @@ export function VehicleVerificationsView() {
   });
   const notify = useToast();
 
-  const [search, setSearch] = useState("");
+  // Từ khoá nằm trên URL: /verifications/vehicles?q=...
+  const url = useUrlState();
+  const query = url.getText("q");
+  const [search, setSearch] = useUrlSearchText(query, (q) => url.setParams({ q }));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
   const all = data?.adminPendingVehicleVerifications ?? [];
-  const keyword = search.trim().toLowerCase();
+  const keyword = query.toLowerCase();
   const rows = all.filter((doc) => {
     if (!keyword) return true;
     const { vehicle } = doc;
@@ -54,6 +58,15 @@ export function VehicleVerificationsView() {
     ].some((value) => value.toLowerCase().includes(keyword));
   });
   const selected = all.find((doc) => doc.id === selectedId) ?? null;
+  const selectedIndex = rows.findIndex((doc) => doc.id === selectedId);
+
+  function navigate(step: -1 | 1) {
+    const target = rows[selectedIndex + step];
+    if (target) {
+      setReviewError(null);
+      setSelectedId(target.id);
+    }
+  }
 
   function closeDialog() {
     setSelectedId(null);
@@ -63,6 +76,8 @@ export function VehicleVerificationsView() {
   async function submit(status: VerificationStatus, rejectionReason?: string) {
     if (!selected) return;
     setReviewError(null);
+    // Xác định hồ sơ kế tiếp trước khi hàng chờ được tải lại và hồ sơ này biến mất.
+    const next = rows[selectedIndex + 1] ?? rows[selectedIndex - 1] ?? null;
     try {
       await review({
         variables: { input: { verificationId: selected.id, status, rejectionReason } },
@@ -72,7 +87,8 @@ export function VehicleVerificationsView() {
           ? `Đã phê duyệt xe ${selected.vehicle.plateNumber}.`
           : `Đã từ chối giấy tờ xe ${selected.vehicle.plateNumber}.`,
       );
-      closeDialog();
+      // Chuyển thẳng sang hồ sơ kế tiếp; hết hàng chờ thì đóng hộp thoại.
+      setSelectedId(next?.id ?? null);
     } catch (cause) {
       setReviewError(errorMessage(cause));
     }
@@ -143,7 +159,10 @@ export function VehicleVerificationsView() {
                     {doc.vehicle.plateNumber}
                   </Td>
                   <Td>
-                    <PersonCell person={doc.vehicle.driverProfile.user} />
+                    <PersonCell
+                      person={doc.vehicle.driverProfile.user}
+                      href={`/verifications/drivers/${doc.vehicle.driverProfile.id}`}
+                    />
                   </Td>
                   <Td className="whitespace-nowrap text-muted">
                     {formatDateTime(doc.createdAt)}
@@ -176,6 +195,12 @@ export function VehicleVerificationsView() {
         ]}
         busy={reviewing}
         error={reviewError}
+        queue={
+          selectedIndex >= 0
+            ? { index: selectedIndex, total: rows.length, onNavigate: navigate }
+            : undefined
+        }
+        profileHref={selected ? `/verifications/drivers/${selected.vehicle.driverProfile.id}` : undefined}
         onApprove={() => submit("APPROVED")}
         onReject={(reason) => submit("REJECTED", reason)}
       >

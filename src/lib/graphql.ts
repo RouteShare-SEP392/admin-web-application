@@ -1,13 +1,27 @@
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import type {
+  AuditAction,
+  AuditLog,
+  Booking,
+  BookingStatus,
+  DriverProfile,
   DriverVerification,
   DriverViolation,
   OperationsOverview,
   Page,
+  Payment,
+  PaymentMethod,
+  PaymentStatus,
+  PaymentSummary,
+  Report,
+  ReportStatus,
+  SosEvent,
   SystemSetting,
   Trip,
   TripStatus,
   User,
+  Vehicle,
+  VehicleType,
   UserRole,
   UserStatus,
   VehicleVerification,
@@ -32,12 +46,18 @@ interface ReviewVars {
 // API backend đã có
 // ---------------------------------------------------------------------------
 
-export const ME: TypedDocumentNode<{ me: Pick<User, "id" | "fullName" | "email"> }> = gql`
+export const ME: TypedDocumentNode<{
+  me: Pick<User, "id" | "fullName" | "email" | "phone" | "avatarUrl" | "role" | "createdAt">;
+}> = gql`
   query Me {
     me {
       id
       fullName
       email
+      phone
+      avatarUrl
+      role
+      createdAt
     }
   }
 `;
@@ -191,6 +211,9 @@ export const OPERATIONS_OVERVIEW: TypedDocumentNode<
         openViolations
         passengerReportViolations
         usersToReview
+        openReports
+        overdueReports
+        unresolvedSos
       }
     }
   }
@@ -239,6 +262,584 @@ export const RECENT_TRIPS: TypedDocumentNode<
           stopName
           stopType
           sequenceOrder
+        }
+      }
+    }
+  }
+`;
+
+interface VerificationHistoryVars {
+  input: PageVars & { statuses: VerificationStatus[]; search?: string };
+}
+
+export const DRIVER_VERIFICATION_HISTORY: TypedDocumentNode<
+  { adminDriverVerifications: Page<DriverVerification> },
+  VerificationHistoryVars
+> = gql`
+  query DriverVerificationHistory($input: AdminDriverVerificationsInput) {
+    adminDriverVerifications(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        id
+        type
+        licenseClass
+        status
+        rejectReason
+        reviewedAt
+        reviewedBy {
+          id
+          fullName
+        }
+        driverProfile {
+          id
+          user {
+            id
+            fullName
+            email
+            phone
+            avatarUrl
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const VEHICLE_VERIFICATION_HISTORY: TypedDocumentNode<
+  { adminVehicleVerifications: Page<VehicleVerification> },
+  VerificationHistoryVars
+> = gql`
+  query VehicleVerificationHistory($input: AdminVehicleVerificationsInput) {
+    adminVehicleVerifications(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        id
+        status
+        rejectReason
+        reviewedAt
+        reviewedBy {
+          id
+          fullName
+        }
+        vehicle {
+          id
+          make
+          model
+          color
+          plateNumber
+          vehicleType
+          driverProfile {
+            id
+            user {
+              id
+              fullName
+              email
+              phone
+              avatarUrl
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const DRIVER_PROFILE: TypedDocumentNode<
+  { adminDriverProfile: DriverProfile },
+  { id: string }
+> = gql`
+  query AdminDriverProfile($id: ID!) {
+    adminDriverProfile(id: $id) {
+      id
+      verificationStatus
+      rejectionReason
+      experienceYears
+      noShowStrikeCount
+      verifiedAt
+      createdAt
+      user {
+        id
+        fullName
+        email
+        phone
+        avatarUrl
+        dateOfBirth
+        status
+      }
+      verifications {
+        id
+        type
+        licenseClass
+        documentNumber
+        frontPhotoUrl
+        backPhotoUrl
+        status
+        rejectReason
+        reviewedAt
+        reviewedBy {
+          id
+          fullName
+        }
+        createdAt
+      }
+      vehicles {
+        id
+        make
+        model
+        color
+        year
+        plateNumber
+        vehicleType
+        seatCapacity
+        verificationStatus
+        verifications {
+          id
+          documentType
+          documentNumber
+          frontPhotoUrl
+          backPhotoUrl
+          status
+          rejectReason
+          reviewedAt
+          reviewedBy {
+            id
+            fullName
+          }
+          createdAt
+        }
+      }
+    }
+  }
+`;
+
+export const VEHICLES: TypedDocumentNode<
+  { adminVehicles: Page<Vehicle> },
+  {
+    input: PageVars & {
+      search?: string;
+      vehicleType?: VehicleType;
+      verificationStatus?: VerificationStatus;
+    };
+  }
+> = gql`
+  query AdminVehicles($input: AdminVehiclesInput) {
+    adminVehicles(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        id
+        make
+        model
+        color
+        year
+        plateNumber
+        vehicleType
+        seatCapacity
+        isActive
+        verificationStatus
+        createdAt
+        driverProfile {
+          id
+          user {
+            id
+            fullName
+            email
+            phone
+            avatarUrl
+          }
+        }
+      }
+    }
+  }
+`;
+
+const TRIP_SUMMARY_FIELDS = gql`
+  fragment TripSummaryFields on Trip {
+    id
+    tripCode
+    status
+    departureTime
+    stops {
+      id
+      stopName
+      stopType
+      sequenceOrder
+    }
+  }
+`;
+
+export const USER_POSTED_TRIPS: TypedDocumentNode<
+  { adminTrips: Page<Trip> },
+  { input: PageVars & { driverId: string } }
+> = gql`
+  query UserPostedTrips($input: AdminTripsInput) {
+    adminTrips(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        ...TripSummaryFields
+        bookedSeats
+        totalSeatsOffered
+      }
+    }
+  }
+  ${TRIP_SUMMARY_FIELDS}
+`;
+
+const BOOKING_ROW_FIELDS = gql`
+  fragment BookingRowFields on AdminBooking {
+    id
+    bookingCode
+    status
+    seatsBooked
+    totalAmount
+    requestedAt
+    pickupStop {
+      id
+      stopName
+    }
+    dropoffStop {
+      id
+      stopName
+    }
+    passenger {
+      id
+      fullName
+      email
+      phone
+      avatarUrl
+    }
+    trip {
+      id
+      tripCode
+      departureTime
+      driver {
+        id
+        fullName
+      }
+    }
+  }
+`;
+
+export const BOOKINGS: TypedDocumentNode<
+  { adminBookings: Page<Booking> },
+  {
+    input: PageVars & {
+      search?: string;
+      status?: BookingStatus;
+      tripId?: string;
+      passengerId?: string;
+    };
+  }
+> = gql`
+  query AdminBookings($input: AdminBookingsInput) {
+    adminBookings(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        ...BookingRowFields
+      }
+    }
+  }
+  ${BOOKING_ROW_FIELDS}
+`;
+
+export const BOOKING_DETAIL: TypedDocumentNode<{ adminBooking: Booking }, { id: string }> = gql`
+  query AdminBooking($id: ID!) {
+    adminBooking(id: $id) {
+      ...BookingRowFields
+      fareStatus
+      baseAmount
+      discountPercent
+      discountAmount
+      platformFee
+      driverEarnings
+      cancellationReason
+      confirmedAt
+      cancelledAt
+      completedAt
+      trip {
+        id
+        status
+        totalDistanceKm
+        driver {
+          id
+          fullName
+          email
+          phone
+          avatarUrl
+        }
+        stops {
+          id
+          stopName
+          stopType
+          sequenceOrder
+        }
+      }
+      payment {
+        id
+        amount
+        method
+        status
+        transactionReference
+        paidAt
+        settlementStatus
+        settledAt
+      }
+    }
+  }
+  ${BOOKING_ROW_FIELDS}
+`;
+
+export const PAYMENTS: TypedDocumentNode<
+  { adminPayments: Page<Payment> & { summary: PaymentSummary } },
+  { input: PageVars & { search?: string; status?: PaymentStatus; method?: PaymentMethod } }
+> = gql`
+  query AdminPayments($input: AdminPaymentsInput) {
+    adminPayments(input: $input) {
+      total
+      page
+      pageSize
+      summary {
+        paidAmount
+        platformFee
+        pendingAmount
+        failedCount
+      }
+      items {
+        id
+        amount
+        platformFee
+        netAmount
+        method
+        status
+        transactionReference
+        paidAt
+        createdAt
+        settlementStatus
+        payer {
+          id
+          fullName
+        }
+        payee {
+          id
+          fullName
+        }
+        booking {
+          id
+          bookingCode
+        }
+      }
+    }
+  }
+`;
+
+const REPORT_FIELDS = gql`
+  fragment ReportFields on AdminReport {
+    id
+    type
+    description
+    status
+    resolutionNote
+    resolvedAt
+    createdAt
+    resolvedBy {
+      id
+      fullName
+    }
+    reporter {
+      id
+      fullName
+      email
+      phone
+      avatarUrl
+    }
+    reportedUser {
+      id
+      fullName
+      email
+      phone
+      avatarUrl
+      status
+    }
+    trip {
+      id
+      tripCode
+      departureTime
+      stops {
+        id
+        stopName
+        stopType
+        sequenceOrder
+      }
+    }
+  }
+`;
+
+export const REPORTS: TypedDocumentNode<
+  { adminReports: Page<Report> },
+  { input: PageVars & { search?: string; status?: ReportStatus } }
+> = gql`
+  query AdminReports($input: AdminReportsInput) {
+    adminReports(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        ...ReportFields
+      }
+    }
+  }
+  ${REPORT_FIELDS}
+`;
+
+export const REPORT_DETAIL: TypedDocumentNode<{ adminReport: Report }, { id: string }> = gql`
+  query AdminReport($id: ID!) {
+    adminReport(id: $id) {
+      ...ReportFields
+    }
+  }
+  ${REPORT_FIELDS}
+`;
+
+export const UPDATE_REPORT_STATUS: TypedDocumentNode<
+  { adminUpdateReportStatus: Report },
+  { input: { reportId: string; status: ReportStatus; note?: string } }
+> = gql`
+  mutation UpdateReportStatus($input: AdminUpdateReportStatusInput!) {
+    adminUpdateReportStatus(input: $input) {
+      ...ReportFields
+    }
+  }
+  ${REPORT_FIELDS}
+`;
+
+const SOS_FIELDS = gql`
+  fragment SosFields on AdminSosEvent {
+    id
+    latitude
+    longitude
+    triggeredAt
+    resolvedAt
+    notes
+    resolvedBy {
+      id
+      fullName
+    }
+    user {
+      id
+      fullName
+      email
+      phone
+      avatarUrl
+    }
+    trip {
+      id
+      tripCode
+      status
+      driver {
+        id
+        fullName
+        phone
+      }
+      stops {
+        id
+        stopName
+        stopType
+        sequenceOrder
+      }
+    }
+    emergencyContacts {
+      id
+      name
+      phone
+      relationship
+    }
+  }
+`;
+
+export const SOS_EVENTS: TypedDocumentNode<
+  { adminSosEvents: Page<SosEvent> },
+  { input: PageVars & { resolved?: boolean } }
+> = gql`
+  query AdminSosEvents($input: AdminSosEventsInput) {
+    adminSosEvents(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        ...SosFields
+      }
+    }
+  }
+  ${SOS_FIELDS}
+`;
+
+export const RESOLVE_SOS_EVENT: TypedDocumentNode<
+  { adminResolveSosEvent: SosEvent },
+  { input: { sosEventId: string; notes: string } }
+> = gql`
+  mutation ResolveSosEvent($input: AdminResolveSosEventInput!) {
+    adminResolveSosEvent(input: $input) {
+      ...SosFields
+    }
+  }
+  ${SOS_FIELDS}
+`;
+
+/** Số việc an toàn đang chờ, cho huy hiệu trên thanh điều hướng. */
+export const SAFETY_COUNTS: TypedDocumentNode<{
+  openReports: { total: number };
+  unresolvedSos: { total: number };
+}> = gql`
+  query SafetyCounts {
+    openReports: adminReports(input: { status: OPEN, pageSize: 1 }) {
+      total
+    }
+    unresolvedSos: adminSosEvents(input: { resolved: false, pageSize: 1 }) {
+      total
+    }
+  }
+`;
+
+export const CREATE_ADMIN: TypedDocumentNode<
+  { adminCreateAdmin: Pick<User, "id" | "fullName"> },
+  { input: { fullName: string; email: string; password: string } }
+> = gql`
+  mutation CreateAdmin($input: AdminCreateAdminInput!) {
+    adminCreateAdmin(input: $input) {
+      id
+      fullName
+    }
+  }
+`;
+
+export const USER_VIOLATIONS: TypedDocumentNode<
+  { adminDriverViolations: Page<DriverViolation> },
+  { input: PageVars & { driverId: string } }
+> = gql`
+  query UserViolations($input: AdminDriverViolationsInput) {
+    adminDriverViolations(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        id
+        tripId
+        violationType
+        penaltyAction
+        isForgiven
+        createdAt
+        trip {
+          id
+          tripCode
         }
       }
     }
@@ -551,5 +1152,41 @@ export const UPDATE_SYSTEM_SETTING: TypedDocumentNode<
       description
       updatedAt
     }
+  }
+`;
+
+export const AUDIT_LOGS: TypedDocumentNode<
+  { adminAuditLogs: Page<AuditLog> },
+  { input: PageVars & { action?: AuditAction; actorId?: string; search?: string } }
+> = gql`
+  query AdminAuditLogs($input: AdminAuditLogsInput) {
+    adminAuditLogs(input: $input) {
+      total
+      page
+      pageSize
+      items {
+        id
+        action
+        targetType
+        targetId
+        targetLabel
+        detail
+        createdAt
+        actor {
+          id
+          fullName
+          avatarUrl
+        }
+      }
+    }
+  }
+`;
+
+export const CHANGE_PASSWORD: TypedDocumentNode<
+  { changePassword: boolean },
+  { input: { currentPassword: string; newPassword: string } }
+> = gql`
+  mutation ChangePassword($input: ChangePasswordInput!) {
+    changePassword(input: $input)
   }
 `;

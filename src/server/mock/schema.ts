@@ -306,6 +306,10 @@ export const PROPOSED_SDL = /* GraphQL */ `
     passengerReportViolations: Int!
     """Tài xế có từ 2 vi phạm còn hiệu lực hoặc điểm đánh giá dưới 3,5"""
     usersToReview: Int!
+    openReports: Int!
+    """Báo cáo OPEN quá 24 giờ chưa ai nhận"""
+    overdueReports: Int!
+    unresolvedSos: Int!
   }
 
   type AdminOperationsOverview {
@@ -318,6 +322,252 @@ export const PROPOSED_SDL = /* GraphQL */ `
     funnel: AdminBookingFunnel!
     matching: AdminMatchingQuality!
     safety: AdminSafetyQueue!
+  }
+
+  input AdminDriverVerificationsInput {
+    """Bỏ trống để lấy mọi trạng thái. Trang lịch sử gửi [APPROVED, REJECTED]"""
+    statuses: [VerificationStatus!]
+    type: DriverVerificationType
+    """Tìm theo họ tên, email, số điện thoại của tài xế hoặc số giấy tờ"""
+    search: String
+    page: Int = 1
+    pageSize: Int = 10
+  }
+
+  type AdminDriverVerificationPage {
+    items: [DriverVerification!]!
+    total: Int!
+    page: Int!
+    pageSize: Int!
+  }
+
+  input AdminVehicleVerificationsInput {
+    statuses: [VerificationStatus!]
+    """Tìm theo biển số, hãng xe, dòng xe hoặc họ tên chủ xe"""
+    search: String
+    page: Int = 1
+    pageSize: Int = 10
+  }
+
+  type AdminVehicleVerificationPage {
+    items: [VehicleVerification!]!
+    total: Int!
+    page: Int!
+    pageSize: Int!
+  }
+
+  input AdminVehiclesInput {
+    """Tìm theo biển số, hãng xe, dòng xe hoặc họ tên chủ xe"""
+    search: String
+    vehicleType: VehicleType
+    verificationStatus: VerificationStatus
+    page: Int = 1
+    pageSize: Int = 10
+  }
+
+  type AdminVehiclePage {
+    items: [Vehicle!]!
+    total: Int!
+    page: Int!
+    pageSize: Int!
+  }
+
+  """Theo enum booking_status trong DBML. Backend chưa có module đặt chỗ."""
+  enum BookingStatus {
+    PENDING
+    CONFIRMED
+    REJECTED
+    CANCELLED
+    COMPLETED
+    EXPIRED
+  }
+
+  enum BookingFareStatus { ESTIMATED FINALIZED }
+  enum PaymentMethod { MOMO VNPAY VIETQR CASH }
+  enum PaymentStatus { PENDING PAID PARTIALLY_REFUNDED REFUNDED FAILED CANCELLED }
+  enum SettlementStatus { PENDING PROCESSING SETTLED FAILED CANCELLED }
+  enum ReportStatus { OPEN UNDER_REVIEW RESOLVED REJECTED }
+
+  """
+  Một đặt chỗ nhìn từ phía quản trị. Tên trường bám theo bảng bookings trong
+  DBML; có thể đổi khi backend thiết kế module đặt chỗ.
+  """
+  type AdminBooking {
+    id: ID!
+    bookingCode: String!
+    status: BookingStatus!
+    seatsBooked: Int!
+    """ESTIMATED cho tới khi chuyến kết thúc và giá được chốt theo số khách thực tế"""
+    fareStatus: BookingFareStatus!
+    baseAmount: Float!
+    discountPercent: Float!
+    discountAmount: Float!
+    """Tính trên baseAmount, trừ vào phần của tài xế"""
+    platformFee: Float!
+    """Số tiền khách trả: baseAmount - discountAmount"""
+    totalAmount: Float!
+    """totalAmount - platformFee"""
+    driverEarnings: Float!
+    cancellationReason: String
+    requestedAt: DateTime!
+    confirmedAt: DateTime
+    cancelledAt: DateTime
+    completedAt: DateTime
+    passenger: User!
+    trip: Trip!
+    pickupStop: TripStop!
+    dropoffStop: TripStop!
+    payment: AdminPayment
+  }
+
+  input AdminBookingsInput {
+    """Tìm theo mã đặt chỗ, mã chuyến hoặc họ tên hành khách"""
+    search: String
+    status: BookingStatus
+    """Chỉ đặt chỗ của chuyến này: danh sách hành khách ở trang chi tiết chuyến"""
+    tripId: ID
+    """Chỉ đặt chỗ của hành khách này: lịch sử ở trang chi tiết người dùng"""
+    passengerId: ID
+    page: Int = 1
+    pageSize: Int = 10
+  }
+
+  type AdminBookingPage {
+    items: [AdminBooking!]!
+    total: Int!
+    page: Int!
+    pageSize: Int!
+  }
+
+  """Bảng payments, kèm trạng thái đối soát lấy từ settlements."""
+  type AdminPayment {
+    id: ID!
+    amount: Float!
+    platformFee: Float!
+    netAmount: Float!
+    method: PaymentMethod!
+    status: PaymentStatus!
+    transactionReference: String
+    paidAt: DateTime
+    createdAt: DateTime!
+    """null với tiền mặt: khách đưa thẳng cho tài xế"""
+    settlementStatus: SettlementStatus
+    settledAt: DateTime
+    payer: User!
+    payee: User!
+    booking: AdminBooking!
+  }
+
+  input AdminPaymentsInput {
+    """Tìm theo mã đặt chỗ, mã giao dịch hoặc họ tên người trả"""
+    search: String
+    status: PaymentStatus
+    method: PaymentMethod
+    page: Int = 1
+    pageSize: Int = 10
+  }
+
+  """Tính trên toàn bộ kết quả lọc, không chỉ trang đang xem."""
+  type AdminPaymentSummary {
+    paidAmount: Float!
+    """Phí nền tảng của các giao dịch đã thanh toán"""
+    platformFee: Float!
+    pendingAmount: Float!
+    failedCount: Int!
+  }
+
+  type AdminPaymentPage {
+    items: [AdminPayment!]!
+    total: Int!
+    page: Int!
+    pageSize: Int!
+    summary: AdminPaymentSummary!
+  }
+
+  """Bảng reports. resolutionNote chưa có trong DBML, cần thêm cột."""
+  type AdminReport {
+    id: ID!
+    type: String!
+    description: String!
+    status: ReportStatus!
+    resolutionNote: String
+    resolvedBy: User
+    resolvedAt: DateTime
+    createdAt: DateTime!
+    reporter: User!
+    reportedUser: User!
+    trip: Trip
+  }
+
+  input AdminReportsInput {
+    """Tìm theo loại báo cáo, họ tên người báo cáo hoặc người bị báo cáo"""
+    search: String
+    status: ReportStatus
+    page: Int = 1
+    pageSize: Int = 10
+  }
+
+  type AdminReportPage {
+    items: [AdminReport!]!
+    total: Int!
+    page: Int!
+    pageSize: Int!
+  }
+
+  input AdminUpdateReportStatusInput {
+    reportId: ID!
+    """UNDER_REVIEW, RESOLVED hoặc REJECTED"""
+    status: ReportStatus!
+    """Bắt buộc khi đóng báo cáo (RESOLVED, REJECTED)"""
+    note: String
+  }
+
+  type AdminEmergencyContact {
+    id: ID!
+    name: String!
+    phone: String!
+    relationship: String!
+  }
+
+  """Bảng sos_events. resolvedBy chưa có trong DBML, cần thêm cột."""
+  type AdminSosEvent {
+    id: ID!
+    latitude: Float!
+    longitude: Float!
+    triggeredAt: DateTime!
+    resolvedAt: DateTime
+    resolvedBy: User
+    notes: String
+    user: User!
+    trip: Trip
+    """Liên hệ khẩn cấp đang bật của người bấm SOS"""
+    emergencyContacts: [AdminEmergencyContact!]!
+  }
+
+  input AdminSosEventsInput {
+    """true: chỉ sự cố đã xử lý; false: chỉ sự cố chưa xử lý; bỏ trống: tất cả"""
+    resolved: Boolean
+    page: Int = 1
+    pageSize: Int = 10
+  }
+
+  type AdminSosEventPage {
+    items: [AdminSosEvent!]!
+    total: Int!
+    page: Int!
+    pageSize: Int!
+  }
+
+  input AdminResolveSosEventInput {
+    sosEventId: ID!
+    notes: String!
+  }
+
+  input AdminCreateAdminInput {
+    fullName: String!
+    email: String!
+    """Mật khẩu ban đầu, tối thiểu 8 ký tự"""
+    password: String!
   }
 
   input AdminUsersInput {
@@ -359,6 +609,8 @@ export const PROPOSED_SDL = /* GraphQL */ `
     """Chỉ chuyến khởi hành hôm nay (múi giờ Asia/Ho_Chi_Minh)"""
     todayOnly: Boolean
     sortBy: AdminTripSort = DEPARTURE_TIME
+    """Chỉ chuyến do tài xế này đăng (id của users)"""
+    driverId: ID
     page: Int = 1
     pageSize: Int = 10
   }
@@ -378,6 +630,8 @@ export const PROPOSED_SDL = /* GraphQL */ `
   input AdminDriverViolationsInput {
     violationType: ViolationType
     isForgiven: Boolean
+    """Chỉ vi phạm của tài xế này (id của users)"""
+    driverId: ID
     page: Int = 1
     pageSize: Int = 10
   }
@@ -394,6 +648,73 @@ export const PROPOSED_SDL = /* GraphQL */ `
     reason: String!
   }
 
+  enum AdminAuditAction {
+    DRIVER_DOCUMENT_APPROVED
+    DRIVER_DOCUMENT_REJECTED
+    VEHICLE_DOCUMENT_APPROVED
+    VEHICLE_DOCUMENT_REJECTED
+    USER_SUSPENDED
+    USER_UNSUSPENDED
+    TRIP_CANCELLED
+    VIOLATION_FORGIVEN
+    SETTING_UPDATED
+    DATA_EXPORTED
+    PASSWORD_CHANGED
+    REPORT_UPDATED
+    SOS_RESOLVED
+    ADMIN_CREATED
+  }
+
+  enum AdminAuditTargetType {
+    USER
+    DRIVER_PROFILE
+    TRIP
+    VIOLATION
+    SETTING
+    EXPORT
+    ACCOUNT
+    REPORT
+    SOS
+  }
+
+  """Một dòng nhật ký: ai đã làm gì, với đối tượng nào, lúc nào. Chỉ thêm, không sửa, không xoá."""
+  type AdminAuditLog {
+    id: ID!
+    action: AdminAuditAction!
+    actor: User!
+    targetType: AdminAuditTargetType!
+    """id của đối tượng để dẫn link; null với EXPORT và ACCOUNT"""
+    targetId: ID
+    """Tên đối tượng tại thời điểm thao tác, ví dụ "GPLX của Nguyễn Văn An" """
+    targetLabel: String!
+    """Lý do, giá trị cũ và mới của cấu hình, hoặc phạm vi xuất dữ liệu"""
+    detail: String
+    createdAt: DateTime!
+  }
+
+  input AdminAuditLogsInput {
+    action: AdminAuditAction
+    """Chỉ thao tác của quản trị viên này (id của users)"""
+    actorId: ID
+    """Tìm trong tên đối tượng, tên người thực hiện và chi tiết"""
+    search: String
+    page: Int = 1
+    pageSize: Int = 10
+  }
+
+  type AdminAuditLogPage {
+    items: [AdminAuditLog!]!
+    total: Int!
+    page: Int!
+    pageSize: Int!
+  }
+
+  input ChangePasswordInput {
+    currentPassword: String!
+    """Tối thiểu 8 ký tự, theo quy tắc mật khẩu hiện có"""
+    newPassword: String!
+  }
+
   input AdminUpdateSystemSettingInput {
     settingKey: String!
     settingValue: String!
@@ -402,28 +723,71 @@ export const PROPOSED_SDL = /* GraphQL */ `
   extend type Query {
     """rangeDays nhận 7, 14 hoặc 30"""
     adminOperationsOverview(rangeDays: Int! = 14): AdminOperationsOverview!
+    """Hồ sơ đã xử lý xếp theo thời điểm duyệt, mới nhất trước"""
+    adminDriverVerifications(input: AdminDriverVerificationsInput): AdminDriverVerificationPage!
+    adminVehicleVerifications(input: AdminVehicleVerificationsInput): AdminVehicleVerificationPage!
+    """Toàn bộ giấy tờ và phương tiện của một tài xế, theo id của driver_profiles"""
+    adminDriverProfile(id: ID!): DriverProfile!
+    adminVehicles(input: AdminVehiclesInput): AdminVehiclePage!
+    """Mới đặt trước"""
+    adminBookings(input: AdminBookingsInput): AdminBookingPage!
+    adminBooking(id: ID!): AdminBooking!
+    """Mới tạo trước"""
+    adminPayments(input: AdminPaymentsInput): AdminPaymentPage!
+    """Mới gửi trước"""
+    adminReports(input: AdminReportsInput): AdminReportPage!
+    adminReport(id: ID!): AdminReport!
+    """Sự cố chưa xử lý luôn xếp trên cùng"""
+    adminSosEvents(input: AdminSosEventsInput): AdminSosEventPage!
     adminUsers(input: AdminUsersInput): AdminUserPage!
     adminUser(id: ID!): User!
     adminTrips(input: AdminTripsInput): AdminTripPage!
     adminTrip(id: ID!): Trip!
     adminDriverViolations(input: AdminDriverViolationsInput): AdminDriverViolationPage!
     adminSystemSettings: [SystemSetting!]!
+    """Mới nhất trước"""
+    adminAuditLogs(input: AdminAuditLogsInput): AdminAuditLogPage!
   }
 
   extend type Mutation {
-    """Đặt status = SUSPENDED. Backend cần chặn đăng nhập với tài khoản bị khoá."""
+    """
+    Đặt status = SUSPENDED. Backend cần chặn đăng nhập với tài khoản bị khoá.
+    Khoá được quản trị viên khác, nhưng không tự khoá mình và không khoá người cuối cùng.
+    """
     adminSuspendUser(input: AdminSuspendUserInput!): User!
     adminUnsuspendUser(userId: ID!): User!
     """Chỉ áp dụng cho chuyến PUBLISHED (theo state machine của chuyến đi)."""
     adminCancelTrip(input: AdminCancelTripInput!): Trip!
     adminForgiveViolation(input: AdminForgiveViolationInput!): DriverViolation!
     adminUpdateSystemSetting(input: AdminUpdateSystemSettingInput!): SystemSetting!
+    """
+    Đổi mật khẩu của người đang đăng nhập (mọi vai trò). Backend hiện chỉ có
+    luồng đặt lại mật khẩu qua OTP email.
+    """
+    changePassword(input: ChangePasswordInput!): Boolean!
+    adminUpdateReportStatus(input: AdminUpdateReportStatusInput!): AdminReport!
+    adminResolveSosEvent(input: AdminResolveSosEventInput!): AdminSosEvent!
+    """Tạo tài khoản role = ADMIN. Danh sách quản trị viên dùng adminUsers(role: ADMIN)."""
+    adminCreateAdmin(input: AdminCreateAdminInput!): User!
   }
 `;
 
 /** Các root field backend chưa có: được lớp mock xử lý khi NEXT_PUBLIC_API_MOCK=missing. */
 export const PROPOSED_ROOT_FIELDS = new Set([
   "adminOperationsOverview",
+  "adminDriverVerifications",
+  "adminVehicleVerifications",
+  "adminDriverProfile",
+  "adminVehicles",
+  "adminBookings",
+  "adminBooking",
+  "adminPayments",
+  "adminReports",
+  "adminReport",
+  "adminSosEvents",
+  "adminUpdateReportStatus",
+  "adminResolveSosEvent",
+  "adminCreateAdmin",
   "adminUsers",
   "adminUser",
   "adminTrips",
@@ -435,4 +799,6 @@ export const PROPOSED_ROOT_FIELDS = new Set([
   "adminCancelTrip",
   "adminForgiveViolation",
   "adminUpdateSystemSetting",
+  "adminAuditLogs",
+  "changePassword",
 ]);

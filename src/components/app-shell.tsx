@@ -3,21 +3,29 @@
 import { useQuery } from "@apollo/client/react";
 import {
   Car,
+  FileCheck,
+  Flag,
+  History,
   IdCard,
   LayoutDashboard,
   LogOut,
   Menu,
   Route,
+  ScrollText,
   Settings,
   ShieldAlert,
+  Siren,
+  Ticket,
+  UserCog,
   Users,
+  Wallet,
   X,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { ME, PENDING_COUNTS } from "@/lib/graphql";
+import { ME, PENDING_COUNTS, SAFETY_COUNTS } from "@/lib/graphql";
 import { resolveMockMode } from "@/lib/mock-mode";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
@@ -27,7 +35,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
-  badge?: "drivers" | "vehicles";
+  badge?: "drivers" | "vehicles" | "reports" | "sos";
 }
 
 const NAV: { title: string | null; items: NavItem[] }[] = [
@@ -38,21 +46,36 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
   {
     title: "Xét duyệt",
     items: [
-      { href: "/verifications/drivers", label: "Tài xế", icon: IdCard, badge: "drivers" },
-      { href: "/verifications/vehicles", label: "Phương tiện", icon: Car, badge: "vehicles" },
+      { href: "/verifications/drivers", label: "Hồ sơ tài xế", icon: IdCard, badge: "drivers" },
+      { href: "/verifications/vehicles", label: "Giấy tờ xe", icon: FileCheck, badge: "vehicles" },
+      { href: "/verifications/history", label: "Lịch sử", icon: History },
+    ],
+  },
+  {
+    title: "An toàn",
+    items: [
+      { href: "/reports", label: "Báo cáo", icon: Flag, badge: "reports" },
+      { href: "/sos", label: "SOS", icon: Siren, badge: "sos" },
+      { href: "/violations", label: "Vi phạm", icon: ShieldAlert },
     ],
   },
   {
     title: "Quản lý",
     items: [
       { href: "/users", label: "Người dùng", icon: Users },
+      { href: "/vehicles", label: "Phương tiện", icon: Car },
       { href: "/trips", label: "Chuyến đi", icon: Route },
-      { href: "/violations", label: "Vi phạm", icon: ShieldAlert },
+      { href: "/bookings", label: "Đặt chỗ", icon: Ticket },
+      { href: "/payments", label: "Thanh toán", icon: Wallet },
     ],
   },
   {
     title: "Hệ thống",
-    items: [{ href: "/settings", label: "Cấu hình", icon: Settings }],
+    items: [
+      { href: "/settings", label: "Cấu hình", icon: Settings },
+      { href: "/audit-log", label: "Nhật ký", icon: ScrollText },
+      { href: "/admins", label: "Quản trị viên", icon: UserCog },
+    ],
   },
 ];
 
@@ -79,9 +102,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: meData } = useQuery(ME);
   const { data: pending } = useQuery(PENDING_COUNTS);
 
+  // Làm mới định kỳ để sự cố SOS mới hiện huy hiệu dù quản trị viên đang ở trang khác.
+  const { data: safety } = useQuery(SAFETY_COUNTS, { pollInterval: 30_000 });
+
   const counts = {
     drivers: pending?.adminPendingDriverVerifications.length ?? 0,
     vehicles: pending?.adminPendingVehicleVerifications.length ?? 0,
+    reports: safety?.openReports.total ?? 0,
+    sos: safety?.unresolvedSos.total ?? 0,
   };
   const admin = meData?.me;
   const mockLabel = MOCK_MODE_LABEL[resolveMockMode()];
@@ -150,8 +178,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <span className="flex-1">{item.label}</span>
                         {count > 0 ? (
                           <span
-                            className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-brand-900 tabular-nums"
-                            aria-label={`${count} hồ sơ chờ duyệt`}
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                              item.badge === "sos"
+                                ? "bg-red-500 text-white"
+                                : "bg-accent text-brand-900",
+                            )}
+                            aria-label={`${count} việc đang chờ xử lý`}
                           >
                             {count}
                           </span>
@@ -166,13 +199,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="border-t border-white/10 p-3">
-          <div className="flex items-center gap-3 px-2 py-2">
-            <Avatar name={admin?.fullName ?? "Quản trị"} />
+          <Link
+            href="/account"
+            onClick={() => setMenuOpen(false)}
+            aria-current={pathname === "/account" ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-2 py-2 transition-colors",
+              pathname === "/account" ? "bg-brand-700" : "hover:bg-white/10",
+            )}
+          >
+            <Avatar name={admin?.fullName ?? "Quản trị"} src={admin?.avatarUrl} />
             <div className="min-w-0 flex-1 leading-tight">
               <p className="truncate text-sm font-medium">{admin?.fullName ?? "Quản trị viên"}</p>
-              <p className="truncate text-xs text-brand-300">{admin?.email ?? ""}</p>
+              <p className="truncate text-xs text-brand-300">Tài khoản của tôi</p>
             </div>
-          </div>
+          </Link>
           <button
             type="button"
             onClick={logout}

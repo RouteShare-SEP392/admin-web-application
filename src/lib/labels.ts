@@ -1,7 +1,13 @@
 import type {
+  AuditAction,
+  BookingStatus,
   DriverVerificationType,
   LuggageCapacity,
+  PaymentMethod,
+  PaymentStatus,
   PenaltyAction,
+  ReportStatus,
+  SettlementStatus,
   StopType,
   TripStatus,
   UserRole,
@@ -38,6 +44,15 @@ export const TRIP_STATUS: Record<TripStatus, StatusMeta> = {
   IN_PROGRESS: { label: "Đang chạy", tone: "active" },
   COMPLETED: { label: "Hoàn thành", tone: "good" },
   CANCELLED: { label: "Đã huỷ", tone: "bad" },
+  EXPIRED: { label: "Hết hạn", tone: "neutral" },
+};
+
+export const BOOKING_STATUS: Record<BookingStatus, StatusMeta> = {
+  PENDING: { label: "Chờ tài xế duyệt", tone: "pending" },
+  CONFIRMED: { label: "Đã xác nhận", tone: "active" },
+  REJECTED: { label: "Bị từ chối", tone: "bad" },
+  CANCELLED: { label: "Đã huỷ", tone: "bad" },
+  COMPLETED: { label: "Đã đi", tone: "good" },
   EXPIRED: { label: "Hết hạn", tone: "neutral" },
 };
 
@@ -89,4 +104,52 @@ export const GENDER: Record<string, string> = {
   MALE: "Nam",
   FEMALE: "Nữ",
   OTHER: "Khác",
+};
+
+export const AUDIT_ACTION: Record<AuditAction, StatusMeta> = {
+  DRIVER_DOCUMENT_APPROVED: { label: "Duyệt giấy tờ tài xế", tone: "good" },
+  DRIVER_DOCUMENT_REJECTED: { label: "Từ chối giấy tờ tài xế", tone: "bad" },
+  VEHICLE_DOCUMENT_APPROVED: { label: "Duyệt giấy tờ xe", tone: "good" },
+  VEHICLE_DOCUMENT_REJECTED: { label: "Từ chối giấy tờ xe", tone: "bad" },
+  USER_SUSPENDED: { label: "Khoá tài khoản", tone: "bad" },
+  USER_UNSUSPENDED: { label: "Mở khoá tài khoản", tone: "good" },
+  TRIP_CANCELLED: { label: "Huỷ chuyến", tone: "bad" },
+  VIOLATION_FORGIVEN: { label: "Tha vi phạm", tone: "neutral" },
+  SETTING_UPDATED: { label: "Sửa cấu hình", tone: "active" },
+  DATA_EXPORTED: { label: "Xuất dữ liệu", tone: "active" },
+  PASSWORD_CHANGED: { label: "Đổi mật khẩu", tone: "neutral" },
+  REPORT_UPDATED: { label: "Xử lý báo cáo", tone: "active" },
+  SOS_RESOLVED: { label: "Xử lý SOS", tone: "good" },
+  ADMIN_CREATED: { label: "Thêm quản trị viên", tone: "active" },
+};
+
+export const PAYMENT_STATUS: Record<PaymentStatus, StatusMeta> = {
+  PENDING: { label: "Chờ thanh toán", tone: "pending" },
+  PAID: { label: "Đã thanh toán", tone: "good" },
+  PARTIALLY_REFUNDED: { label: "Hoàn một phần", tone: "neutral" },
+  REFUNDED: { label: "Đã hoàn", tone: "neutral" },
+  FAILED: { label: "Thất bại", tone: "bad" },
+  CANCELLED: { label: "Đã huỷ", tone: "neutral" },
+};
+
+export const PAYMENT_METHOD: Record<PaymentMethod, string> = {
+  MOMO: "MoMo",
+  VNPAY: "VNPay",
+  VIETQR: "VietQR",
+  CASH: "Tiền mặt",
+};
+
+export const SETTLEMENT_STATUS: Record<SettlementStatus, StatusMeta> = {
+  PENDING: { label: "Chờ chuyển", tone: "pending" },
+  PROCESSING: { label: "Đang chuyển", tone: "active" },
+  SETTLED: { label: "Đã chuyển", tone: "good" },
+  FAILED: { label: "Chuyển lỗi", tone: "bad" },
+  CANCELLED: { label: "Đã huỷ", tone: "neutral" },
+};
+
+export const REPORT_STATUS: Record<ReportStatus, StatusMeta> = {
+  OPEN: { label: "Mới", tone: "pending" },
+  UNDER_REVIEW: { label: "Đang xem xét", tone: "active" },
+  RESOLVED: { label: "Đã giải quyết", tone: "good" },
+  REJECTED: { label: "Bác bỏ", tone: "neutral" },
 };

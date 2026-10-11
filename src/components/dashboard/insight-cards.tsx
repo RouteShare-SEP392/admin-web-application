@@ -150,6 +150,26 @@ export function SafetyQueueCard({ safety }: { safety: OperationsOverview["safety
     tone: QueueTone;
   }[] = [
     {
+      href: "/sos?state=open",
+      count: safety.unresolvedSos,
+      title: "Sự cố SOS chưa xử lý",
+      detail:
+        safety.unresolvedSos > 0 ? "cần liên hệ người dùng ngay" : "không có sự cố nào đang chờ",
+      tag: safety.unresolvedSos > 0 ? "Khẩn cấp" : "Ổn",
+      tone: safety.unresolvedSos > 0 ? "bad" : "neutral",
+    },
+    {
+      href: "/reports?status=OPEN",
+      count: safety.openReports,
+      title: "Báo cáo đang mở",
+      detail:
+        safety.overdueReports > 0
+          ? `${safety.overdueReports} báo cáo quá 24 giờ chưa xử lý`
+          : "báo cáo người dùng gửi sau chuyến",
+      tag: safety.overdueReports > 0 ? "Ưu tiên" : "Hàng đợi",
+      tone: safety.overdueReports > 0 ? "warn" : "neutral",
+    },
+    {
       href: "/verifications/drivers",
       count: safety.pendingVerifications,
       title: "Hồ sơ chờ duyệt",
@@ -160,19 +180,11 @@ export function SafetyQueueCard({ safety }: { safety: OperationsOverview["safety
       tone: overdue ? "warn" : "neutral",
     },
     {
-      href: "/violations",
+      href: "/violations?state=open",
       count: safety.openViolations,
       title: "Vi phạm còn hiệu lực",
-      detail: `${safety.passengerReportViolations} do hành khách báo cáo`,
-      tag: "Đang xử lý",
-      tone: safety.openViolations > 0 ? "bad" : "neutral",
-    },
-    {
-      href: "/violations",
-      count: safety.usersToReview,
-      title: "Tài xế cần xem xét",
-      detail: "đánh giá dưới 3,5 hoặc vi phạm nhiều lần",
-      tag: "Hàng đợi",
+      detail: `${safety.usersToReview} tài xế vi phạm nhiều lần hoặc điểm thấp`,
+      tag: "Theo dõi",
       tone: "neutral",
     },
   ];
@@ -185,7 +197,7 @@ export function SafetyQueueCard({ safety }: { safety: OperationsOverview["safety
           An toàn & kiểm duyệt
         </h2>
         <Link
-          href="/verifications/drivers"
+          href="/reports?status=OPEN"
           className="text-sm font-medium text-brand-700 hover:underline"
         >
           Mở hàng đợi

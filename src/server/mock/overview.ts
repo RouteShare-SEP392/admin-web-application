@@ -231,6 +231,7 @@ export function buildOperationsOverview(requestedRange: number): OperationsOverv
     ...store.vehicleVerifications.filter((d) => d.status === "PENDING"),
   ];
   const openViolations = store.violations.filter((v) => !v.isForgiven);
+  const openReports = store.reports.filter((r) => r.status === "OPEN");
   const violationsPerDriver = new Map<string, number>();
   for (const v of openViolations) {
     violationsPerDriver.set(v.driverId, (violationsPerDriver.get(v.driverId) ?? 0) + 1);
@@ -262,6 +263,9 @@ export function buildOperationsOverview(requestedRange: number): OperationsOverv
         (v) => v.violationType === "PASSENGER_REPORT",
       ).length,
       usersToReview,
+      openReports: openReports.length,
+      overdueReports: openReports.filter((r) => now - Date.parse(r.createdAt) > DAY).length,
+      unresolvedSos: store.sosEvents.filter((e) => e.resolvedAt === null).length,
     },
   };
 }

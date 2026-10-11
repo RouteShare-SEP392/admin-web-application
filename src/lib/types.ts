@@ -175,6 +175,117 @@ export interface Trip {
   updatedAt: string;
 }
 
+export type BookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "COMPLETED"
+  | "EXPIRED";
+
+export type PaymentMethod = "MOMO" | "VNPAY" | "VIETQR" | "CASH";
+export type PaymentStatus =
+  | "PENDING"
+  | "PAID"
+  | "PARTIALLY_REFUNDED"
+  | "REFUNDED"
+  | "FAILED"
+  | "CANCELLED";
+export type SettlementStatus = "PENDING" | "PROCESSING" | "SETTLED" | "FAILED" | "CANCELLED";
+export type ReportStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+
+/**
+ * Một đặt chỗ nhìn từ phía quản trị. Tên trường bám theo bảng bookings trong
+ * DBML (kiểu đề xuất, backend chưa có module đặt chỗ).
+ */
+export interface Booking {
+  id: string;
+  bookingCode: string;
+  status: BookingStatus;
+  seatsBooked: number;
+  /** ESTIMATED cho tới khi chuyến kết thúc và giá được chốt. */
+  fareStatus: "ESTIMATED" | "FINALIZED";
+  baseAmount: number;
+  discountPercent: number;
+  discountAmount: number;
+  platformFee: number;
+  totalAmount: number;
+  driverEarnings: number;
+  cancellationReason: string | null;
+  requestedAt: string;
+  confirmedAt: string | null;
+  cancelledAt: string | null;
+  completedAt: string | null;
+  passenger: User;
+  trip: Trip;
+  pickupStop: TripStop;
+  dropoffStop: TripStop;
+  payment: Payment | null;
+}
+
+/** Một lần thanh toán sau chuyến (bảng payments, kèm trạng thái đối soát từ settlements). */
+export interface Payment {
+  id: string;
+  amount: number;
+  platformFee: number;
+  netAmount: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  transactionReference: string | null;
+  paidAt: string | null;
+  createdAt: string;
+  /** null với tiền mặt: khách đưa thẳng cho tài xế, không có khoản cần chuyển. */
+  settlementStatus: SettlementStatus | null;
+  settledAt: string | null;
+  payer: User;
+  payee: User;
+  booking: Booking;
+}
+
+export interface PaymentSummary {
+  paidAmount: number;
+  platformFee: number;
+  pendingAmount: number;
+  failedCount: number;
+}
+
+/** Báo cáo của người dùng về một người dùng khác (bảng reports). */
+export interface Report {
+  id: string;
+  type: string;
+  description: string;
+  status: ReportStatus;
+  /** Ghi chú xử lý của quản trị viên (trường đề xuất, DBML chưa có). */
+  resolutionNote: string | null;
+  resolvedBy: User | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  reporter: User;
+  reportedUser: User;
+  trip: Trip | null;
+}
+
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  phone: string;
+  relationship: string;
+}
+
+/** Một lần người dùng bấm nút khẩn cấp trong chuyến (bảng sos_events). */
+export interface SosEvent {
+  id: string;
+  latitude: number;
+  longitude: number;
+  triggeredAt: string;
+  resolvedAt: string | null;
+  resolvedBy: User | null;
+  notes: string | null;
+  user: User;
+  trip: Trip | null;
+  emergencyContacts: EmergencyContact[];
+}
+
 export interface DriverViolation {
   id: string;
   driverId: string;
@@ -204,6 +315,47 @@ export interface Page<T> {
   total: number;
   page: number;
   pageSize: number;
+}
+
+export type AuditAction =
+  | "DRIVER_DOCUMENT_APPROVED"
+  | "DRIVER_DOCUMENT_REJECTED"
+  | "VEHICLE_DOCUMENT_APPROVED"
+  | "VEHICLE_DOCUMENT_REJECTED"
+  | "USER_SUSPENDED"
+  | "USER_UNSUSPENDED"
+  | "TRIP_CANCELLED"
+  | "VIOLATION_FORGIVEN"
+  | "SETTING_UPDATED"
+  | "DATA_EXPORTED"
+  | "PASSWORD_CHANGED"
+  | "REPORT_UPDATED"
+  | "SOS_RESOLVED"
+  | "ADMIN_CREATED";
+
+export type AuditTargetType =
+  | "USER"
+  | "DRIVER_PROFILE"
+  | "TRIP"
+  | "VIOLATION"
+  | "SETTING"
+  | "EXPORT"
+  | "ACCOUNT"
+  | "REPORT"
+  | "SOS";
+
+/** Một dòng nhật ký thao tác của quản trị viên (kiểu đề xuất). */
+export interface AuditLog {
+  id: string;
+  action: AuditAction;
+  actor: User;
+  targetType: AuditTargetType;
+  /** id của đối tượng bị tác động, dùng để dẫn link; null khi không có trang tương ứng. */
+  targetId: string | null;
+  targetLabel: string;
+  /** Lý do, giá trị cũ và mới, hoặc phạm vi xuất dữ liệu. */
+  detail: string | null;
+  createdAt: string;
 }
 
 export type OverviewKpiKey =
@@ -251,5 +403,8 @@ export interface OperationsOverview {
     openViolations: number;
     passengerReportViolations: number;
     usersToReview: number;
+    openReports: number;
+    overdueReports: number;
+    unresolvedSos: number;
   };
 }

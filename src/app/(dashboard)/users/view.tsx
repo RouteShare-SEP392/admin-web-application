@@ -2,7 +2,6 @@
 
 import { useQuery } from "@apollo/client/react";
 import { Search } from "lucide-react";
-import { useState } from "react";
 import { PersonCell } from "@/components/person-cell";
 import { StatusBadge } from "@/components/ui/badge";
 import { Input, Select } from "@/components/ui/field";
@@ -18,17 +17,27 @@ import { USERS } from "@/lib/graphql";
 import { USER_ROLE, USER_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { UserRole, UserStatus } from "@/lib/types";
-import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { formatDate } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
+const ROLE_OPTIONS = ["USER", "ADMIN"] as const satisfies readonly UserRole[];
+const STATUS_OPTIONS = [
+  "ACTIVE",
+  "SUSPENDED",
+  "DEACTIVATED",
+] as const satisfies readonly UserStatus[];
 
 export function UsersView() {
-  const [search, setSearch] = useState("");
-  const [role, setRole] = useState<UserRole | "">("");
-  const [status, setStatus] = useState<UserStatus | "">("");
-  const [page, setPage] = useState(1);
-  const debouncedSearch = useDebouncedValue(search.trim());
+  // Bộ lọc nằm trên URL: /users?q=...&role=...&status=...&page=...
+  const url = useUrlState();
+  const role = url.getOption("role", ROLE_OPTIONS);
+  const status = url.getOption("status", STATUS_OPTIONS);
+  const page = url.getPage();
+  const debouncedSearch = url.getText("q");
+  const [search, setSearch] = useUrlSearchText(debouncedSearch, (q) =>
+    url.setParams({ q, page: null }),
+  );
 
   const { data, previousData, loading, error, refetch } = useQuery(USERS, {
     variables: {
@@ -65,19 +74,13 @@ export function UsersView() {
               placeholder="Tìm theo họ tên, email, số điện thoại"
               className="pl-9"
               value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
+              onChange={(event) => setSearch(event.target.value)}
             />
           </div>
           <Select
             aria-label="Vai trò"
             value={role}
-            onChange={(event) => {
-              setRole(event.target.value as UserRole | "");
-              setPage(1);
-            }}
+            onChange={(event) => url.setParams({ role: event.target.value, page: null })}
           >
             <option value="">Tất cả vai trò</option>
             <option value="USER">{USER_ROLE.USER}</option>
@@ -86,10 +89,7 @@ export function UsersView() {
           <Select
             aria-label="Trạng thái"
             value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as UserStatus | "");
-              setPage(1);
-            }}
+            onChange={(event) => url.setParams({ status: event.target.value, page: null })}
           >
             <option value="">Tất cả trạng thái</option>
             <option value="ACTIVE">{USER_STATUS.ACTIVE.label}</option>
@@ -159,7 +159,7 @@ export function UsersView() {
               page={result.page}
               pageSize={result.pageSize}
               total={result.total}
-              onPageChange={setPage}
+              onPageChange={(next) => url.setParams({ page: next === 1 ? null : next })}
             />
           </>
         )}

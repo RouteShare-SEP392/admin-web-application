@@ -3,7 +3,6 @@
 import { useQuery } from "@apollo/client/react";
 import { Search } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { PersonCell } from "@/components/person-cell";
 import { TripRoute } from "@/components/trip-route";
 import { StatusBadge } from "@/components/ui/badge";
@@ -21,7 +20,7 @@ import { TRIPS } from "@/lib/graphql";
 import { TRIP_STATUS } from "@/lib/labels";
 import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { TripStatus } from "@/lib/types";
-import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
@@ -35,10 +34,14 @@ const STATUS_OPTIONS: TripStatus[] = [
 ];
 
 export function TripsView() {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<TripStatus | "">("");
-  const [page, setPage] = useState(1);
-  const debouncedSearch = useDebouncedValue(search.trim());
+  // Bộ lọc nằm trên URL: /trips?q=...&status=...&page=...
+  const url = useUrlState();
+  const status = url.getOption("status", STATUS_OPTIONS);
+  const page = url.getPage();
+  const debouncedSearch = url.getText("q");
+  const [search, setSearch] = useUrlSearchText(debouncedSearch, (q) =>
+    url.setParams({ q, page: null }),
+  );
 
   const { data, previousData, loading, error, refetch } = useQuery(TRIPS, {
     variables: {
@@ -73,19 +76,13 @@ export function TripsView() {
               placeholder="Tìm theo tên tài xế hoặc điểm dừng"
               className="pl-9"
               value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
+              onChange={(event) => setSearch(event.target.value)}
             />
           </div>
           <Select
             aria-label="Trạng thái chuyến"
             value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as TripStatus | "");
-              setPage(1);
-            }}
+            onChange={(event) => url.setParams({ status: event.target.value, page: null })}
           >
             <option value="">Tất cả trạng thái</option>
             {STATUS_OPTIONS.map((option) => (
@@ -157,7 +154,7 @@ export function TripsView() {
               page={result.page}
               pageSize={result.pageSize}
               total={result.total}
-              onPageChange={setPage}
+              onPageChange={(next) => url.setParams({ page: next === 1 ? null : next })}
             />
           </>
         )}

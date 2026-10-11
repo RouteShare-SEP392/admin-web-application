@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   BACKEND_GRAPHQL_URL,
-  MOCK_ADMIN_CREDENTIALS,
   MOCK_MODE,
   MOCK_TOKEN_PREFIX,
   SESSION_COOKIE,
@@ -35,10 +34,11 @@ function fail(message: string, status: number) {
 }
 
 function signInMock(identifier: string, password: string): SignInResult {
-  const matches =
-    identifier.toLowerCase() === MOCK_ADMIN_CREDENTIALS.identifier &&
-    password === MOCK_ADMIN_CREDENTIALS.password;
-  const admin = getStore().users.find((u) => u.role === "ADMIN");
+  const store = getStore();
+  const admin = store.users.find(
+    (u) => u.role === "ADMIN" && u.email?.toLowerCase() === identifier.toLowerCase(),
+  );
+  const matches = admin !== undefined && store.credentials[admin.id] === password;
   if (!matches || !admin) {
     return {
       token: null,

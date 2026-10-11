@@ -22,16 +22,19 @@ import { FORGIVE_VIOLATION, VIOLATIONS } from "@/lib/graphql";
 import { PENALTY_ACTION, VIOLATION_TYPE } from "@/lib/labels";
 import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { ViolationType } from "@/lib/types";
+import { useUrlState } from "@/lib/use-url-state";
 import { errorMessage, formatDateTime } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 const TYPE_OPTIONS = Object.keys(VIOLATION_TYPE) as ViolationType[];
-type ForgivenFilter = "" | "open" | "forgiven";
+const FORGIVEN_OPTIONS = ["open", "forgiven"] as const;
 
 export function ViolationsView() {
-  const [violationType, setViolationType] = useState<ViolationType | "">("");
-  const [forgiven, setForgiven] = useState<ForgivenFilter>("");
-  const [page, setPage] = useState(1);
+  // Bộ lọc nằm trên URL: /violations?type=...&state=...&page=...
+  const url = useUrlState();
+  const violationType = url.getOption("type", TYPE_OPTIONS);
+  const forgiven = url.getOption("state", FORGIVEN_OPTIONS);
+  const page = url.getPage();
   const [targetId, setTargetId] = useState<string | null>(null);
   const [forgiveError, setForgiveError] = useState<string | null>(null);
   const notify = useToast();
@@ -84,10 +87,7 @@ export function ViolationsView() {
           <Select
             aria-label="Loại vi phạm"
             value={violationType}
-            onChange={(event) => {
-              setViolationType(event.target.value as ViolationType | "");
-              setPage(1);
-            }}
+            onChange={(event) => url.setParams({ type: event.target.value, page: null })}
           >
             <option value="">Tất cả loại vi phạm</option>
             {TYPE_OPTIONS.map((option) => (
@@ -99,10 +99,7 @@ export function ViolationsView() {
           <Select
             aria-label="Tình trạng xử lý"
             value={forgiven}
-            onChange={(event) => {
-              setForgiven(event.target.value as ForgivenFilter);
-              setPage(1);
-            }}
+            onChange={(event) => url.setParams({ state: event.target.value, page: null })}
           >
             <option value="">Tất cả tình trạng</option>
             <option value="open">Còn hiệu lực</option>
@@ -195,7 +192,7 @@ export function ViolationsView() {
               page={result.page}
               pageSize={result.pageSize}
               total={result.total}
-              onPageChange={setPage}
+              onPageChange={(next) => url.setParams({ page: next === 1 ? null : next })}
             />
           </>
         )}
