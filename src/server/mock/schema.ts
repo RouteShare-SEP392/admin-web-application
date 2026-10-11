@@ -246,30 +246,99 @@ export const PROPOSED_SDL = /* GraphQL */ `
     updatedAt: DateTime!
   }
 
-  type AdminTripStatusCount {
-    status: TripStatus!
-    count: Int!
+  # Bốn trường tóm tắt thêm vào type Trip cho bảng "Chuyến gần đây".
+  # Ba trường sau cần module đặt chỗ để tính.
+  extend type Trip {
+    """Mã ngắn, duy nhất, để đọc và tra cứu. Ví dụ RS-4821"""
+    tripCode: String!
+    """Số ghế đang được giữ (PENDING, CONFIRMED) hoặc đã đi (COMPLETED)"""
+    bookedSeats: Int!
+    """Tỷ lệ trùng tuyến trung bình của các khách trên chuyến, 0-100"""
+    averageMatchPercent: Float
+    """Tổng chi phí các khách chia sẻ cho chuyến"""
+    sharedCostTotal: Float
   }
 
-  type AdminDailyCount {
-    """Ngày theo múi giờ Asia/Ho_Chi_Minh, định dạng YYYY-MM-DD"""
+  enum AdminOverviewKpiKey {
+    TOTAL_USERS
+    ACTIVE_DRIVERS
+    ACTIVE_PASSENGERS
+    TRIPS_TODAY
+    CONFIRMED_BOOKINGS
+    COMPLETED_TRIPS
+    CANCELLED_TRIPS
+    AVERAGE_MATCH_RATE
+  }
+
+  enum AdminDeltaUnit {
+    """Phần trăm thay đổi so với kỳ liền trước"""
+    PERCENT
+    """Chênh lệch điểm phần trăm so với kỳ liền trước"""
+    POINTS
+  }
+
+  type AdminOverviewKpi {
+    key: AdminOverviewKpiKey!
+    value: Float!
+    """null khi kỳ liền trước không có dữ liệu để so sánh"""
+    delta: Float
+    deltaUnit: AdminDeltaUnit!
+    """10 giá trị chia đều theo thời gian trong kỳ, cũ trước mới sau"""
+    series: [Float!]!
+    """
+    Số liệu phụ, ý nghĩa theo key:
+    TOTAL_USERS số tài khoản mới trong kỳ; ACTIVE_DRIVERS % tài xế đăng từ 2 chuyến;
+    ACTIVE_PASSENGERS số chuyến mỗi khách mỗi tuần; TRIPS_TODAY giờ cao điểm (0-23);
+    CONFIRMED_BOOKINGS % yêu cầu được phản hồi dưới 15 phút;
+    COMPLETED_TRIPS % hoàn thành trên chuyến đã kết thúc; CANCELLED_TRIPS % huỷ trên tổng chuyến.
+    """
+    secondaryValue: Float
+  }
+
+  type AdminDailyTrips {
+    """Ngày khởi hành theo múi giờ Asia/Ho_Chi_Minh, định dạng YYYY-MM-DD"""
     date: String!
-    count: Int!
+    """Số chuyến đã đăng có giờ khởi hành trong ngày (không tính DRAFT)"""
+    posted: Int!
+    completed: Int!
   }
 
-  type AdminDashboardStats {
-    totalUsers: Int!
-    newUsersLast7Days: Int!
-    approvedDrivers: Int!
-    pendingDriverVerifications: Int!
-    pendingVehicleVerifications: Int!
-    """Số chuyến PUBLISHED + IN_PROGRESS"""
-    activeTrips: Int!
-    """Số vi phạm chưa được tha"""
+  """Cần ghi log lượt tìm chuyến; hiện backend chưa lưu dữ liệu này."""
+  type AdminBookingFunnel {
+    searches: Int!
+    matchedSearches: Int!
+    bookingRequests: Int!
+    approvedBookings: Int!
+  }
+
+  type AdminMatchingQuality {
+    averageOverlapPercent: Float!
+    overlapDeltaPoints: Float
+    averageDetourKm: Float!
+    detourDeltaKm: Float
+  }
+
+  type AdminSafetyQueue {
+    pendingVerifications: Int!
+    """Hồ sơ chờ duyệt quá 24 giờ"""
+    overdueVerifications: Int!
+    """Vi phạm chưa được tha"""
     openViolations: Int!
-    tripsByStatus: [AdminTripStatusCount!]!
-    """7 ngày gần nhất, cũ trước mới sau"""
-    signupsByDay: [AdminDailyCount!]!
+    passengerReportViolations: Int!
+    """Tài xế có từ 2 vi phạm còn hiệu lực hoặc điểm đánh giá dưới 3,5"""
+    usersToReview: Int!
+  }
+
+  type AdminOperationsOverview {
+    generatedAt: DateTime!
+    rangeDays: Int!
+    """Đủ 8 phần tử theo thứ tự của AdminOverviewKpiKey"""
+    kpis: [AdminOverviewKpi!]!
+    """Đúng rangeDays phần tử, cũ trước mới sau, ngày không có chuyến trả 0"""
+    dailyTrips: [AdminDailyTrips!]!
+    funnel: AdminBookingFunnel!
+    matching: AdminMatchingQuality!
+    safety: AdminSafetyQueue!
   }
 
   input AdminUsersInput {
@@ -293,10 +362,24 @@ export const PROPOSED_SDL = /* GraphQL */ `
     reason: String!
   }
 
+  enum AdminTripSort {
+    """Giờ khởi hành, mới nhất trước (mặc định)"""
+    DEPARTURE_TIME
+    """Thời điểm tạo, mới nhất trước"""
+    CREATED_AT
+  }
+
   input AdminTripsInput {
     """Tìm theo tên tài xế hoặc tên điểm dừng"""
     search: String
     status: TripStatus
+    """Chỉ chuyến có tỷ lệ trùng tuyến trung bình dưới 70%"""
+    lowMatchOnly: Boolean
+    """Chỉ chuyến có vi phạm còn hiệu lực"""
+    hasViolation: Boolean
+    """Chỉ chuyến khởi hành hôm nay (múi giờ Asia/Ho_Chi_Minh)"""
+    todayOnly: Boolean
+    sortBy: AdminTripSort = DEPARTURE_TIME
     page: Int = 1
     pageSize: Int = 10
   }
@@ -338,7 +421,8 @@ export const PROPOSED_SDL = /* GraphQL */ `
   }
 
   extend type Query {
-    adminDashboardStats: AdminDashboardStats!
+    """rangeDays nhận 7, 14 hoặc 30"""
+    adminOperationsOverview(rangeDays: Int! = 14): AdminOperationsOverview!
     adminUsers(input: AdminUsersInput): AdminUserPage!
     adminUser(id: ID!): User!
     adminTrips(input: AdminTripsInput): AdminTripPage!
@@ -360,7 +444,7 @@ export const PROPOSED_SDL = /* GraphQL */ `
 
 /** Các root field backend chưa có: được lớp mock xử lý khi NEXT_PUBLIC_API_MOCK=missing. */
 export const PROPOSED_ROOT_FIELDS = new Set([
-  "adminDashboardStats",
+  "adminOperationsOverview",
   "adminUsers",
   "adminUser",
   "adminTrips",

@@ -84,6 +84,7 @@ export function TripDetailView() {
       <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-brand-700 tabular-nums">{trip.tripCode}</span>
             <StatusBadge meta={TRIP_STATUS[trip.status]} />
             {isProposedApiMocked() ? <MockBadge /> : null}
           </div>
@@ -176,8 +177,16 @@ export function TripDetailView() {
           <Card>
             <CardHeader title="Thông tin chuyến" />
             <dl className="divide-y divide-line px-5 py-2">
-              <Fact label="Ghế trống / ghế chia sẻ">
-                {trip.availableSeats}/{trip.totalSeatsOffered}
+              <Fact label="Ghế đã đặt / ghế chia sẻ">
+                {trip.bookedSeats}/{trip.totalSeatsOffered}
+              </Fact>
+              <Fact label="Tỷ lệ trùng tuyến trung bình">
+                {trip.averageMatchPercent === null
+                  ? "Chưa có khách"
+                  : `${Math.round(trip.averageMatchPercent)}%`}
+              </Fact>
+              <Fact label="Khách đã chia sẻ chi phí">
+                {trip.sharedCostTotal === null ? "—" : formatCurrency(trip.sharedCostTotal)}
               </Fact>
               <Fact label="Giá mỗi km, mỗi ghế">
                 {trip.pricing

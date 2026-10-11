@@ -28,10 +28,51 @@ export interface MockStore {
   trips: Trip[];
   violations: DriverViolation[];
   settings: SystemSetting[];
+  bookings: MockBooking[];
+  exportAudit: ExportAuditEntry[];
+}
+
+export type BookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "COMPLETED"
+  | "EXPIRED";
+
+/** Đặt chỗ rút gọn: backend chưa có module booking, lớp mock chỉ giữ đủ để tính chỉ số. */
+export interface MockBooking {
+  id: string;
+  tripId: string;
+  passengerId: string;
+  seats: number;
+  status: BookingStatus;
+  createdAt: number;
+  respondedAt: number | null;
+  /** Phần trăm lộ trình của tài xế mà khách đi cùng. */
+  overlapPercent: number;
+  /** Quãng đường tài xế phải đi thêm để đón và trả khách này. */
+  detourKm: number;
+  /** Phần chi phí khách này chia sẻ. */
+  amount: number;
+}
+
+/** Nhật ký mỗi lần xuất CSV: ai, lúc nào, bộ lọc gì, bao nhiêu dòng. */
+export interface ExportAuditEntry {
+  adminId: string;
+  exportedAt: string;
+  filters: Record<string, string | number>;
+  rowCount: number;
+}
+
+/** Đặt chỗ đang giữ ghế hoặc đã đi xong. */
+export function isActiveBooking(status: BookingStatus): boolean {
+  return status === "PENDING" || status === "CONFIRMED" || status === "COMPLETED";
 }
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
+export const VN_OFFSET = 7 * HOUR;
 
 const NAMES = [
   "Nguyễn Văn An",
@@ -394,32 +435,87 @@ function createStore(): MockStore {
   addVehicle(8, 11, "PENDING");
 
   const trips: Trip[] = [];
-  const TRIP_COUNT = 36;
-  for (let i = 0; i < TRIP_COUNT; i++) {
+  const bookings: MockBooking[] = [];
+  // users[0] là admin, users[1..12] có hồ sơ tài xế, phần còn lại đóng vai hành khách.
+  const passengerIds = users.slice(13).map((u) => u.id);
+  const startOfToday = Math.floor((now + VN_OFFSET) / DAY) * DAY - VN_OFFSET;
+
+  const addTrip = (departure: number) => {
+    const i = trips.length;
     const driverIndex = i % 7;
     const driver = users[driverIndex + 1];
     const vehicle = vehicles[driverIndex];
-    const route = ROUTES[i % ROUTES.length];
-    const stops = i % 3 === 0 ? [...route.stops].reverse() : route.stops;
-    // Trải đều từ 20 ngày trước đến 6 ngày tới.
-    const scheduled =
-      now - 20 * DAY + (i / (TRIP_COUNT - 1)) * 26 * DAY + between(-5, 5) * HOUR;
-    // Hai chuyến vừa khởi hành để luôn có dữ liệu "đang chạy".
-    const departure =
-      i === 27 ? now - 40 * 60_000 : i === 28 ? now - 15 * 60_000 : scheduled;
+    const route = pick(ROUTES);
+    const stops = rand() < 0.4 ? [...route.stops].reverse() : route.stops;
     const arrival = departure + route.minutes * 60_000;
 
+    const roll = rand();
     let status: TripStatus;
     if (arrival < now) {
-      status = i % 9 === 4 ? "CANCELLED" : i % 11 === 7 ? "EXPIRED" : "COMPLETED";
+      status = roll < 0.07 ? "CANCELLED" : roll < 0.11 ? "EXPIRED" : "COMPLETED";
     } else if (departure <= now) {
       status = "IN_PROGRESS";
     } else {
-      status = i % 10 === 9 ? "DRAFT" : i % 13 === 5 ? "CANCELLED" : "PUBLISHED";
+      status = roll < 0.06 ? "DRAFT" : roll < 0.12 ? "CANCELLED" : "PUBLISHED";
     }
 
     const totalSeatsOffered = between(1, vehicle.seatCapacity - 1);
     const costPerKm = between(8, 25) * 100;
+    const createdAt = Math.min(
+      departure - between(1, 5) * DAY - between(0, 10) * HOUR,
+      now - between(5, 600) * 60_000,
+    );
+
+    // Đặt chỗ của chuyến: nguồn dữ liệu cho các chỉ số ghép tuyến ở trang tổng quan.
+    const requestCount =
+      status === "DRAFT" || status === "EXPIRED"
+        ? 0
+        : status === "PUBLISHED"
+          ? between(0, totalSeatsOffered)
+          : status === "CANCELLED"
+            ? between(0, Math.min(2, totalSeatsOffered))
+            : between(1, totalSeatsOffered);
+    const tripBookings: MockBooking[] = [];
+    for (let b = 0; b < requestCount; b++) {
+      const r = rand();
+      const bookingStatus: BookingStatus =
+        status === "COMPLETED"
+          ? r < 0.8 ? "COMPLETED" : r < 0.9 ? "CANCELLED" : "REJECTED"
+          : status === "IN_PROGRESS"
+            ? "CONFIRMED"
+            : status === "CANCELLED"
+              ? "CANCELLED"
+              : r < 0.6 ? "CONFIRMED" : r < 0.85 ? "PENDING" : r < 0.93 ? "REJECTED" : "CANCELLED";
+      const requestedAt =
+        createdAt + rand() * (Math.min(departure, now) - createdAt);
+      const responseMinutes = rand() < 0.78 ? between(1, 14) : between(16, 180);
+      tripBookings.push({
+        id: mockId("b0000000", bookings.length + tripBookings.length + 1),
+        tripId: mockId("t0000000", i + 1),
+        passengerId: pick(passengerIds),
+        seats: 1,
+        status: bookingStatus,
+        createdAt: requestedAt,
+        respondedAt:
+          bookingStatus === "PENDING" ? null : requestedAt + responseMinutes * 60_000,
+        overlapPercent: between(55, 98),
+        detourKm: Number((0.3 + rand() * 2.7).toFixed(1)),
+        amount: 0,
+      });
+    }
+    const active = tripBookings.filter((b) => isActiveBooking(b.status));
+    for (const booking of active) {
+      // Chia đều chi phí đoạn đi chung cho tài xế và các khách, làm tròn nghìn đồng.
+      booking.amount =
+        Math.round(
+          (route.km * (booking.overlapPercent / 100) * costPerKm) /
+            (1 + active.length) /
+            1000,
+        ) * 1000;
+    }
+    bookings.push(...tripBookings);
+    const bookedSeats = active.reduce((sum, b) => sum + b.seats, 0);
+
     const cancelled = status === "CANCELLED";
 
     let actualStartedAt: string | null = null;
@@ -453,7 +549,7 @@ function createStore(): MockStore {
       };
     });
 
-    const bookings: TripBookingMilestone[] = [];
+    const milestoneBookings: TripBookingMilestone[] = [];
     if (status !== "DRAFT" && !cancelled) {
       const passengerCount = between(1, Math.min(3, totalSeatsOffered));
       for (let b = 0; b < passengerCount; b++) {
@@ -478,7 +574,7 @@ function createStore(): MockStore {
           }
         }
 
-        bookings.push({
+        milestoneBookings.push({
           id: mockId("bk000000", i * 10 + b + 1),
           passengerId: passengerUser.id,
           passengerName: passengerUser.fullName,
@@ -499,6 +595,7 @@ function createStore(): MockStore {
 
     trips.push({
       id: mockId("t0000000", i + 1),
+      tripCode: "",
       status,
       driverId: driver.id,
       driver,
@@ -513,9 +610,14 @@ function createStore(): MockStore {
       totalDurationMinutes: route.minutes,
       totalSeatsOffered,
       availableSeats:
-        status === "PUBLISHED" || status === "DRAFT"
-          ? between(0, totalSeatsOffered)
-          : 0,
+        status === "PUBLISHED" || status === "DRAFT" ? totalSeatsOffered - bookedSeats : 0,
+      bookedSeats,
+      averageMatchPercent: active.length
+        ? Math.round(active.reduce((sum, b) => sum + b.overlapPercent, 0) / active.length)
+        : null,
+      sharedCostTotal: active.length
+        ? active.reduce((sum, b) => sum + b.amount, 0)
+        : null,
       isInstantBooking: i % 4 === 0,
       luggageAllowed: pick<LuggageCapacity>(["NO_LUGGAGE", "SMALL", "MEDIUM", "LARGE"]),
       driverNotes: DRIVER_NOTES[i % DRIVER_NOTES.length],
@@ -528,12 +630,33 @@ function createStore(): MockStore {
         totalEstimatedFare: Math.round(route.km * costPerKm),
       },
       stops: tripStops,
-      bookings,
-      createdAt: iso(departure - between(1, 5) * DAY),
+      bookings: milestoneBookings,
+      createdAt: iso(createdAt),
       updatedAt: iso(Math.min(arrival, now)),
     });
     if (status === "COMPLETED") driver.totalRidesAsDriver += 1;
+  };
+
+  // 62 ngày trước đến 6 ngày tới: đủ để so sánh kỳ 30 ngày với kỳ liền trước.
+  const DEPARTURE_HOURS = [6, 6, 7, 7, 8, 9, 12, 16, 17, 17, 18, 20];
+  for (let day = -62; day <= 6; day++) {
+    const dayStart = startOfToday + day * DAY;
+    const weekday = new Date(dayStart + VN_OFFSET).getUTCDay();
+    const isWeekend = weekday === 0 || weekday === 6;
+    const count = (isWeekend ? 4 : 6) + between(0, 2) + (day > -20 ? 1 : 0);
+    for (let n = 0; n < count; n++) {
+      addTrip(dayStart + pick(DEPARTURE_HOURS) * HOUR + between(0, 59) * 60_000);
+    }
   }
+  // Hai chuyến vừa khởi hành để luôn có dữ liệu "đang chạy".
+  addTrip(now - 40 * 60_000);
+  addTrip(now - 15 * 60_000);
+
+  [...trips]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach((trip, order) => {
+      trip.tripCode = `RS-${4400 + order}`;
+    });
   for (let i = 0; i < 7; i++) {
     users[i + 1].ratingAsDriver = Number((4.3 + rand() * 0.7).toFixed(2));
   }
@@ -552,7 +675,8 @@ function createStore(): MockStore {
   const pastTrips = trips.filter((t) => Date.parse(t.estimatedArrivalTime) < now);
   const violations: DriverViolation[] = VIOLATION_PLAN.map(
     ([violationType, penaltyAction, affectedPassengersCount], i) => {
-      const trip = pastTrips[(i * 2 + 1) % pastTrips.length];
+      // Lấy các chuyến đã kết thúc gần đây nhất để vi phạm không quá cũ.
+      const trip = pastTrips[pastTrips.length - 2 - i * 9];
       const createdAt = Date.parse(trip.estimatedArrivalTime) + 2 * HOUR;
       const suspendHours =
         penaltyAction === "SUSPENDED_24H"
@@ -611,15 +735,21 @@ function createStore(): MockStore {
     trips,
     violations,
     settings,
+    bookings,
+    exportAudit: [],
   };
 }
 
 // Giữ kho trên globalThis để không bị tạo lại mỗi lần Next.js biên dịch lại module.
+// Tăng SEED_VERSION khi đổi cấu trúc dữ liệu mẫu, để server dev đang chạy tạo kho mới.
+const SEED_VERSION = 2;
 const globalStore = globalThis as typeof globalThis & {
-  __routeshareMockStore?: MockStore;
+  __routeshareMockStore?: { version: number; store: MockStore };
 };
 
 export function getStore(): MockStore {
-  globalStore.__routeshareMockStore ??= createStore();
-  return globalStore.__routeshareMockStore;
+  if (globalStore.__routeshareMockStore?.version !== SEED_VERSION) {
+    globalStore.__routeshareMockStore = { version: SEED_VERSION, store: createStore() };
+  }
+  return globalStore.__routeshareMockStore.store;
 }

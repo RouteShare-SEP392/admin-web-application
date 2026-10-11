@@ -1,12 +1,14 @@
 import { GraphQLError } from "graphql";
 import type {
   DriverProfile,
+  Trip,
   TripStatus,
   UserRole,
   UserStatus,
   VerificationStatus,
   ViolationType,
 } from "@/lib/types";
+import { buildOperationsOverview, startOfVnDay } from "./overview";
 import { getStore } from "./store";
 
 export interface MockContext {
@@ -23,8 +25,6 @@ interface ReviewInput {
   status: VerificationStatus;
   rejectionReason?: string | null;
 }
-
-const VN_OFFSET_MS = 7 * 3_600_000;
 
 function fail(message: string, code = "BAD_REQUEST"): never {
   throw new GraphQLError(message, { extensions: { code } });
@@ -51,6 +51,53 @@ function paginate<T>(items: T[], input?: PageInput | null) {
   };
 }
 
+export interface TripFilter {
+  search?: string | null;
+  status?: TripStatus | null;
+  lowMatchOnly?: boolean | null;
+  hasViolation?: boolean | null;
+  todayOnly?: boolean | null;
+  sortBy?: "DEPARTURE_TIME" | "CREATED_AT" | null;
+  /** Chỉ dùng cho xuất CSV: giới hạn theo giờ khởi hành trong N ngày gần nhất. */
+  departedWithinDays?: number | null;
+}
+
+/** Lọc và sắp xếp chuyến đi; dùng chung cho bảng danh sách và xuất CSV. */
+export function selectTrips(filter: TripFilter): Trip[] {
+  const store = getStore();
+  const now = Date.now();
+  const search = normalize(filter.search);
+  const todayStart = startOfVnDay(now);
+  const flagged = new Set(
+    store.violations.filter((v) => !v.isForgiven).map((v) => v.tripId),
+  );
+  const sortKey = filter.sortBy === "CREATED_AT" ? "createdAt" : "departureTime";
+
+  return store.trips
+    .filter((trip) => {
+      const departure = Date.parse(trip.departureTime);
+      if (filter.status && trip.status !== filter.status) return false;
+      if (
+        filter.lowMatchOnly &&
+        (trip.averageMatchPercent === null || trip.averageMatchPercent >= 70)
+      )
+        return false;
+      if (filter.hasViolation && !flagged.has(trip.id)) return false;
+      if (filter.todayOnly && (departure < todayStart || departure >= todayStart + 86_400_000))
+        return false;
+      if (
+        filter.departedWithinDays &&
+        (departure < now - filter.departedWithinDays * 86_400_000 || departure > now)
+      )
+        return false;
+      if (!search) return true;
+      return [trip.tripCode, trip.driver?.fullName, ...trip.stops.map((s) => s.stopName)].some(
+        (value) => normalize(value).includes(search),
+      );
+    })
+    .sort((a, b) => b[sortKey].localeCompare(a[sortKey]));
+}
+
 function requireReason(reason: string | null | undefined, label: string): string {
   const trimmed = reason?.trim() ?? "";
   if (trimmed.length < 5) fail(`${label} cần ít nhất 5 ký tự.`);
@@ -59,11 +106,6 @@ function requireReason(reason: string | null | undefined, label: string): string
 
 function newestFirst<T extends { createdAt: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-/** Ngày YYYY-MM-DD theo giờ Việt Nam. */
-function vnDateKey(ms: number): string {
-  return new Date(ms + VN_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 function assertReviewable(input: ReviewInput, currentStatus: VerificationStatus) {
@@ -155,52 +197,8 @@ export const rootValue = {
   },
 
   // ----- API admin đề xuất -----
-  adminDashboardStats() {
-    const store = getStore();
-    const now = Date.now();
-    const weekAgo = now - 7 * 86_400_000;
-    const members = store.users.filter((u) => u.role === "USER");
-
-    const statuses: TripStatus[] = [
-      "PUBLISHED",
-      "IN_PROGRESS",
-      "COMPLETED",
-      "CANCELLED",
-      "EXPIRED",
-      "DRAFT",
-    ];
-    const tripsByStatus = statuses.map((status) => ({
-      status,
-      count: store.trips.filter((t) => t.status === status).length,
-    }));
-
-    const signupsByDay = Array.from({ length: 7 }, (_, i) => {
-      const date = vnDateKey(now - (6 - i) * 86_400_000);
-      return {
-        date,
-        count: members.filter((u) => vnDateKey(Date.parse(u.createdAt)) === date)
-          .length,
-      };
-    });
-
-    return {
-      totalUsers: members.length,
-      newUsersLast7Days: members.filter((u) => Date.parse(u.createdAt) >= weekAgo)
-        .length,
-      approvedDrivers: members.filter((u) => u.isDriverApproved).length,
-      pendingDriverVerifications: store.driverVerifications.filter(
-        (d) => d.status === "PENDING",
-      ).length,
-      pendingVehicleVerifications: store.vehicleVerifications.filter(
-        (d) => d.status === "PENDING",
-      ).length,
-      activeTrips: store.trips.filter(
-        (t) => t.status === "PUBLISHED" || t.status === "IN_PROGRESS",
-      ).length,
-      openViolations: store.violations.filter((v) => !v.isForgiven).length,
-      tripsByStatus,
-      signupsByDay,
-    };
+  adminOperationsOverview({ rangeDays }: { rangeDays: number }) {
+    return buildOperationsOverview(rangeDays);
   },
 
   adminUsers({
@@ -248,22 +246,8 @@ export const rootValue = {
     return user;
   },
 
-  adminTrips({
-    input,
-  }: {
-    input?: (PageInput & { search?: string | null; status?: TripStatus | null }) | null;
-  }) {
-    const search = normalize(input?.search);
-    const items = getStore()
-      .trips.filter((t) => {
-        if (input?.status && t.status !== input.status) return false;
-        if (!search) return true;
-        return [t.driver?.fullName, ...t.stops.map((s) => s.stopName)].some((v) =>
-          normalize(v).includes(search),
-        );
-      })
-      .sort((a, b) => b.departureTime.localeCompare(a.departureTime));
-    return paginate(items, input);
+  adminTrips({ input }: { input?: (PageInput & TripFilter) | null }) {
+    return paginate(selectTrips(input ?? {}), input);
   },
 
   adminTrip({ id }: { id: string }) {
