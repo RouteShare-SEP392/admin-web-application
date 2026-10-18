@@ -17,7 +17,7 @@ import {
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { VEHICLES } from "@/lib/graphql";
 import { VEHICLE_TYPE, VERIFICATION_STATUS } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
+import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { VehicleType, VerificationStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { formatDate } from "@/lib/utils";
@@ -58,7 +58,7 @@ export function VehiclesView() {
       <PageHeader
         title="Phương tiện"
         description="Mọi xe tài xế đã đăng ký. Tra theo biển số để biết xe thuộc về ai và đã được duyệt chưa."
-        mocked={isProposedApiMocked()}
+        mocked={isExistingApiMocked()}
       />
 
       <Card>

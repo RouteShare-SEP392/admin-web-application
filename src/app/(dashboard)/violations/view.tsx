@@ -20,7 +20,7 @@ import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import { FORGIVE_VIOLATION, VIOLATIONS } from "@/lib/graphql";
 import { PENALTY_ACTION, VIOLATION_TYPE } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
+import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { ViolationType } from "@/lib/types";
 import { useUrlState } from "@/lib/use-url-state";
 import { errorMessage, formatDateTime } from "@/lib/utils";
@@ -79,7 +79,7 @@ export function ViolationsView() {
       <PageHeader
         title="Vi phạm tài xế"
         description="Vi phạm do hệ thống tự ghi nhận khi tài xế bỏ chuyến, huỷ sát giờ hoặc bị báo cáo."
-        mocked={isProposedApiMocked()}
+        mocked={isExistingApiMocked()}
       />
 
       <Card>

@@ -15,7 +15,7 @@ import {
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { USERS } from "@/lib/graphql";
 import { USER_ROLE, USER_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
+import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { UserRole, UserStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { formatDate } from "@/lib/utils";
@@ -58,7 +58,7 @@ export function UsersView() {
       <PageHeader
         title="Người dùng"
         description="Tra cứu tài khoản hành khách, tài xế và quản trị viên."
-        mocked={isProposedApiMocked()}
+        mocked={isExistingApiMocked()}
       />
 
       <Card>

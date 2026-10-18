@@ -793,13 +793,14 @@ export const PROPOSED_SDL = /* GraphQL */ `
   }
 `;
 
-/** Các root field backend chưa có: được lớp mock xử lý khi NEXT_PUBLIC_API_MOCK=missing. */
+/**
+ * Các root field backend CHƯA có: được lớp mock xử lý khi NEXT_PUBLIC_API_MOCK=missing.
+ * Khi backend làm xong một API, xoá tên nó khỏi danh sách này để web gọi API thật.
+ * Đã chuyển sang API thật (backend nhánh feat/admin-apis): người dùng, chuyến đi,
+ * lịch sử xét duyệt, hồ sơ tài xế, phương tiện, vi phạm, quản trị viên, đổi mật khẩu.
+ */
 export const PROPOSED_ROOT_FIELDS = new Set([
   "adminOperationsOverview",
-  "adminDriverVerifications",
-  "adminVehicleVerifications",
-  "adminDriverProfile",
-  "adminVehicles",
   "adminBookings",
   "adminBooking",
   "adminPayments",
@@ -808,18 +809,7 @@ export const PROPOSED_ROOT_FIELDS = new Set([
   "adminSosEvents",
   "adminUpdateReportStatus",
   "adminResolveSosEvent",
-  "adminCreateAdmin",
-  "adminUsers",
-  "adminUser",
-  "adminTrips",
-  "adminTrip",
-  "adminDriverViolations",
   "adminSystemSettings",
-  "adminSuspendUser",
-  "adminUnsuspendUser",
-  "adminCancelTrip",
-  "adminForgiveViolation",
   "adminUpdateSystemSetting",
   "adminAuditLogs",
-  "changePassword",
 ]);

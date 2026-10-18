@@ -18,7 +18,7 @@ import {
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { DRIVER_VERIFICATION_HISTORY, VEHICLE_VERIFICATION_HISTORY } from "@/lib/graphql";
 import { DRIVER_DOCUMENT_TYPE, VEHICLE_TYPE, VERIFICATION_STATUS } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
+import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { VerificationStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -71,7 +71,7 @@ export function VerificationHistoryView() {
       <PageHeader
         title="Lịch sử xét duyệt"
         description="Giấy tờ đã được phê duyệt hoặc từ chối, mới xử lý xếp trước."
-        mocked={isProposedApiMocked()}
+        mocked={isExistingApiMocked()}
       />
 
       <div
