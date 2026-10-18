@@ -24,7 +24,7 @@ import {
   REVIEW_VEHICLE_VERIFICATION,
 } from "@/lib/graphql";
 import { DRIVER_DOCUMENT_TYPE, VEHICLE_TYPE, VERIFICATION_STATUS } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
+import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { DriverVerificationType, VerificationStatus } from "@/lib/types";
 import { errorMessage, formatDate } from "@/lib/utils";
 
@@ -128,7 +128,7 @@ export function DriverProfileView() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-semibold">{user.fullName}</h1>
               <StatusBadge meta={VERIFICATION_STATUS[profile.verificationStatus]} />
-              {isProposedApiMocked() ? <MockBadge /> : null}
+              {isExistingApiMocked() ? <MockBadge /> : null}
             </div>
             <p className="mt-1 text-sm text-muted">
               {[user.phone, user.email].filter(Boolean).join(" · ") || "Chưa có thông tin liên hệ"}

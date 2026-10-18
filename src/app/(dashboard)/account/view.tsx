@@ -21,7 +21,7 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { AUDIT_LOGS, CHANGE_PASSWORD, ME } from "@/lib/graphql";
 import { USER_ROLE } from "@/lib/labels";
-import { isProposedApiMocked, resolveMockMode } from "@/lib/mock-mode";
+import { isExistingApiMocked } from "@/lib/mock-mode";
 import { errorMessage, formatDate } from "@/lib/utils";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -89,13 +89,10 @@ function ChangePasswordCard() {
   const [changePassword, { loading }] = useMutation(CHANGE_PASSWORD);
   const notify = useToast();
 
-  // Ở chế độ mock một phần, đăng nhập dùng backend thật còn mutation này là dữ liệu
-  // mẫu: cho đổi sẽ khiến người dùng tưởng mật khẩu thật đã đổi.
-  const unavailable = resolveMockMode() === "missing";
   const tooShort = next.length > 0 && next.length < MIN_PASSWORD_LENGTH;
   const mismatch = confirm.length > 0 && confirm !== next;
   const ready =
-    current.length > 0 && next.length >= MIN_PASSWORD_LENGTH && confirm === next && !unavailable;
+    current.length > 0 && next.length >= MIN_PASSWORD_LENGTH && confirm === next;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -119,17 +116,11 @@ function ChangePasswordCard() {
       <CardHeader
         title="Đổi mật khẩu"
         description={
-          isProposedApiMocked() && !unavailable
+          isExistingApiMocked()
             ? "Đang chạy dữ liệu mẫu: mật khẩu mới chỉ có hiệu lực tới khi khởi động lại máy chủ."
             : undefined
         }
       />
-      {unavailable ? (
-        <p className="m-5 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-          Backend chưa hỗ trợ đổi mật khẩu khi đã đăng nhập. Hiện bạn có thể đổi bằng chức năng
-          quên mật khẩu trên ứng dụng di động.
-        </p>
-      ) : null}
       <form onSubmit={handleSubmit} className="space-y-4 p-5" noValidate>
         <Field label="Mật khẩu hiện tại" htmlFor="current-password">
           <Input
@@ -138,7 +129,6 @@ function ChangePasswordCard() {
             autoComplete="current-password"
             value={current}
             onChange={(event) => setCurrent(event.target.value)}
-            disabled={unavailable}
           />
         </Field>
         <Field
@@ -153,7 +143,6 @@ function ChangePasswordCard() {
             autoComplete="new-password"
             value={next}
             onChange={(event) => setNext(event.target.value)}
-            disabled={unavailable}
           />
         </Field>
         <Field
@@ -167,7 +156,6 @@ function ChangePasswordCard() {
             autoComplete="new-password"
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
-            disabled={unavailable}
           />
         </Field>
 
