@@ -26,17 +26,23 @@ export interface ReviewableDocument {
 export function DocumentCard({
   title,
   document,
+  previous = [],
   facts,
   busy,
+  approveBlockedReason,
   onApprove,
   onReject,
 }: {
   title: string;
   /** null khi tài xế chưa nộp loại giấy tờ này. */
   document: ReviewableDocument | null;
+  /** Các bản nộp cũ hơn của cùng giấy tờ, mới trước. */
+  previous?: ReviewableDocument[];
   /** Các dòng thông tin riêng của loại giấy tờ, hiển thị dạng "nhãn: giá trị". */
   facts?: ReactNode;
   busy?: boolean;
+  /** Lý do chưa thể phê duyệt; có thì nút Phê duyệt bị khoá và lý do hiện ngay trên thẻ. */
+  approveBlockedReason?: string | null;
   onApprove?: () => void;
   onReject?: () => void;
 }) {
@@ -85,18 +91,59 @@ export function DocumentCard({
       ) : null}
 
       {pending && onApprove && onReject ? (
-        <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-line pt-4">
-          <Button variant="secondary" size="sm" onClick={onReject} disabled={busy}>
-            <X className="size-4" aria-hidden />
-            Từ chối
-          </Button>
-          <Button size="sm" onClick={onApprove} disabled={busy}>
-            <Check className="size-4" aria-hidden />
-            {busy ? "Đang xử lý…" : "Phê duyệt"}
-          </Button>
+        <div className="mt-4 border-t border-line pt-4">
+          {approveBlockedReason ? (
+            <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              {approveBlockedReason}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={onReject} disabled={busy}>
+              <X className="size-4" aria-hidden />
+              Từ chối
+            </Button>
+            <Button size="sm" onClick={onApprove} disabled={busy || Boolean(approveBlockedReason)}>
+              <Check className="size-4" aria-hidden />
+              {busy ? "Đang xử lý…" : "Phê duyệt"}
+            </Button>
+          </div>
         </div>
       ) : null}
+
+      {previous.length > 0 ? <PreviousSubmissions documents={previous} /> : null}
     </article>
+  );
+}
+
+/** Các lần nộp trước, thu gọn mặc định để thẻ tập trung vào bản đang xét. */
+function PreviousSubmissions({ documents }: { documents: ReviewableDocument[] }) {
+  return (
+    <details className="mt-4 border-t border-line pt-3 text-sm">
+      <summary className="cursor-pointer font-medium text-brand-700">
+        Các lần nộp trước ({documents.length})
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {documents.map((doc) => (
+          <li key={doc.id} className="rounded-lg border border-line px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-muted">
+                Nộp {formatDateTime(doc.createdAt)} · số {doc.documentNumber}
+              </span>
+              <StatusBadge meta={VERIFICATION_STATUS[doc.status]} />
+            </div>
+            {doc.reviewedAt ? (
+              <p className="mt-1 text-muted">
+                {doc.status === "REJECTED" ? "Từ chối" : "Duyệt"} lúc {formatDateTime(doc.reviewedAt)}
+                {doc.reviewedBy ? ` · ${doc.reviewedBy.fullName}` : ""}
+              </p>
+            ) : null}
+            {doc.status === "REJECTED" && doc.rejectReason ? (
+              <p className="mt-1 text-red-800">Lý do: {doc.rejectReason}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 

@@ -1,13 +1,13 @@
 "use client";
 
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import Link from "next/link";
 import { useState } from "react";
+import { ForgiveViolationDialog } from "@/components/forgive-violation-dialog";
 import { PersonCell } from "@/components/person-cell";
 import { TripRoute } from "@/components/trip-route";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ReasonDialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/field";
 import {
   Card,
@@ -17,13 +17,12 @@ import {
   TableSkeleton,
 } from "@/components/ui/misc";
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
-import { useToast } from "@/components/ui/toast";
-import { FORGIVE_VIOLATION, VIOLATIONS } from "@/lib/graphql";
+import { VIOLATIONS } from "@/lib/graphql";
 import { PENALTY_ACTION, VIOLATION_TYPE } from "@/lib/labels";
 import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { ViolationType } from "@/lib/types";
 import { useUrlState } from "@/lib/use-url-state";
-import { errorMessage, formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 const TYPE_OPTIONS = Object.keys(VIOLATION_TYPE) as ViolationType[];
@@ -36,8 +35,6 @@ export function ViolationsView() {
   const forgiven = url.getOption("state", FORGIVEN_OPTIONS);
   const page = url.getPage();
   const [targetId, setTargetId] = useState<string | null>(null);
-  const [forgiveError, setForgiveError] = useState<string | null>(null);
-  const notify = useToast();
 
   const { data, previousData, loading, error, refetch } = useQuery(VIOLATIONS, {
     variables: {
@@ -49,30 +46,8 @@ export function ViolationsView() {
       },
     },
   });
-  const [forgive, { loading: forgiving }] = useMutation(FORGIVE_VIOLATION, {
-    // Tha vi phạm có thể làm bản ghi rơi khỏi danh sách đang lọc.
-    refetchQueries: [VIOLATIONS],
-  });
-
   const result = (data ?? previousData)?.adminDriverViolations;
   const target = result?.items.find((item) => item.id === targetId) ?? null;
-
-  function closeDialog() {
-    setTargetId(null);
-    setForgiveError(null);
-  }
-
-  async function handleForgive(reason: string) {
-    if (!target) return;
-    setForgiveError(null);
-    try {
-      await forgive({ variables: { input: { violationId: target.id, reason } } });
-      notify(`Đã tha vi phạm của ${target.driver.fullName}.`);
-      closeDialog();
-    } catch (cause) {
-      setForgiveError(errorMessage(cause));
-    }
-  }
 
   return (
     <>
@@ -198,20 +173,12 @@ export function ViolationsView() {
         )}
       </Card>
 
-      <ReasonDialog
-        open={target !== null}
-        onClose={closeDialog}
-        title={target ? `Tha vi phạm của ${target.driver.fullName}?` : ""}
-        description={
-          target
-            ? `${VIOLATION_TYPE[target.violationType]}. Vi phạm được tha sẽ không còn tính vào số lần bỏ chuyến của tài xế.`
-            : undefined
-        }
-        reasonLabel="Lý do tha"
-        confirmLabel="Tha vi phạm"
-        busy={forgiving}
-        error={forgiveError}
-        onConfirm={handleForgive}
+      <ForgiveViolationDialog
+        violation={target}
+        driverName={target?.driver.fullName ?? ""}
+        // Tha vi phạm có thể làm bản ghi rơi khỏi danh sách đang lọc.
+        refetchQueries={[VIOLATIONS]}
+        onClose={() => setTargetId(null)}
       />
     </>
   );
