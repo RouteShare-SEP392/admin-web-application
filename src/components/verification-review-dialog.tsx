@@ -24,6 +24,8 @@ interface Props {
   error: string | null;
   onApprove: () => void;
   onReject: (reason: string) => void;
+  /** Lý do chưa thể phê duyệt; có thì nút Phê duyệt bị khoá và lý do được hiển thị. */
+  approveBlockedReason?: string | null;
   /** Vị trí của hồ sơ trong hàng chờ đang lọc, để chuyển qua lại mà không đóng hộp thoại. */
   queue?: { index: number; total: number; onNavigate: (step: -1 | 1) => void };
   /** Trang gom toàn bộ giấy tờ và phương tiện của tài xế này. */
@@ -46,6 +48,7 @@ function ReviewContent({
   error,
   onApprove,
   onReject,
+  approveBlockedReason,
   queue,
   profileHref,
 }: Props) {
@@ -81,7 +84,7 @@ function ReviewContent({
               <X className="size-4" aria-hidden />
               Từ chối
             </Button>
-            <Button onClick={onApprove} disabled={busy}>
+            <Button onClick={onApprove} disabled={busy || Boolean(approveBlockedReason)}>
               <Check className="size-4" aria-hidden />
               {busy ? "Đang xử lý…" : "Phê duyệt"}
             </Button>
@@ -163,6 +166,12 @@ function ReviewContent({
 
         <div className="space-y-5">
           {children}
+
+          {approveBlockedReason && !rejecting ? (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              {approveBlockedReason}
+            </p>
+          ) : null}
 
           {rejecting ? (
             <Field

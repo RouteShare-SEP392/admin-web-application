@@ -23,6 +23,7 @@ import {
   PENDING_VEHICLE_VERIFICATIONS,
   REVIEW_VEHICLE_VERIFICATION,
 } from "@/lib/graphql";
+import { vehicleApprovalBlocker } from "@/lib/driver-rules";
 import { VEHICLE_TYPE, VERIFICATION_STATUS } from "@/lib/labels";
 import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { VerificationStatus } from "@/lib/types";
@@ -201,6 +202,14 @@ export function VehicleVerificationsView() {
             : undefined
         }
         profileHref={selected ? `/verifications/drivers/${selected.vehicle.driverProfile.id}` : undefined}
+        approveBlockedReason={
+          selected
+            ? vehicleApprovalBlocker(
+                selected.vehicle.driverProfile.verifications,
+                selected.vehicle.vehicleType,
+              )
+            : null
+        }
         onApprove={() => submit("APPROVED")}
         onReject={(reason) => submit("REJECTED", reason)}
       >

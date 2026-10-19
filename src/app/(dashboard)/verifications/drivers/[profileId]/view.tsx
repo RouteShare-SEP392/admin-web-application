@@ -23,12 +23,19 @@ import {
   REVIEW_DRIVER_VERIFICATION,
   REVIEW_VEHICLE_VERIFICATION,
 } from "@/lib/graphql";
+import { documentsToResubmit, isSuspended, vehicleApprovalBlocker } from "@/lib/driver-rules";
 import { DRIVER_DOCUMENT_TYPE, VEHICLE_TYPE, VERIFICATION_STATUS } from "@/lib/labels";
 import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { DriverVerificationType, VerificationStatus } from "@/lib/types";
-import { errorMessage, formatDate } from "@/lib/utils";
+import { errorMessage, formatDate, formatDateTime } from "@/lib/utils";
+import { ViolationsSection } from "./violations-section";
 
 const DRIVER_DOCUMENT_ORDER: DriverVerificationType[] = ["IDENTITY_CARD", "DRIVER_LICENSE"];
+
+/** Các bản nộp, mới trước: bản đầu là bản đang xét, phần còn lại là lịch sử. */
+function newestFirst<T extends { createdAt: string }>(docs: T[]): T[] {
+  return [...docs].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
 
 /** Giấy tờ đang được xử lý: thuộc tài xế hay thuộc một chiếc xe. */
 interface ReviewTarget {
@@ -79,6 +86,8 @@ export function DriverProfileView() {
     driverDocs.filter((doc) => doc.status === "PENDING").length +
     vehicles.flatMap((v) => v.verifications ?? []).filter((doc) => doc.status === "PENDING")
       .length;
+  const toResubmit = documentsToResubmit(driverDocs);
+  const suspended = isSuspended(profile);
 
   /** Gửi kết quả xét duyệt; trả về thông báo lỗi nếu thất bại. */
   async function review(
@@ -146,7 +155,9 @@ export function DriverProfileView() {
           <p className="text-sm text-muted">
             {pendingCount > 0
               ? `${pendingCount} giấy tờ đang chờ duyệt`
-              : "Không còn giấy tờ nào chờ duyệt"}
+              : toResubmit.length > 0
+                ? `Chờ tài xế nộp lại ${toResubmit.map((type) => DRIVER_DOCUMENT_TYPE[type]).join(", ")}`
+                : "Không còn giấy tờ nào chờ duyệt"}
           </p>
         </div>
       </Card>
@@ -157,17 +168,23 @@ export function DriverProfileView() {
         </p>
       ) : null}
 
+      {suspended ? (
+        <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="font-semibold">Đang tạm khoá quyền đăng chuyến</span> đến{" "}
+          {formatDateTime(profile.suspendedUntil)} do bỏ chuyến. Xem và tha vi phạm ở mục Vi phạm
+          bên dưới.
+        </p>
+      ) : null}
+
       <section aria-labelledby="driver-documents">
         <h2 id="driver-documents" className="mb-3 text-lg font-semibold">
           Giấy tờ tài xế
         </h2>
         <div className="grid gap-4 lg:grid-cols-2">
           {DRIVER_DOCUMENT_ORDER.map((type) => {
-            // Lấy bản nộp gần nhất của mỗi loại giấy tờ.
-            const doc =
-              driverDocs
-                .filter((d) => d.type === type)
-                .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null;
+            const [doc = null, ...previous] = newestFirst(
+              driverDocs.filter((d) => d.type === type),
+            );
             const target: ReviewTarget | null = doc && {
               kind: "driver",
               id: doc.id,
@@ -178,6 +195,7 @@ export function DriverProfileView() {
                 key={type}
                 title={DRIVER_DOCUMENT_TYPE[type]}
                 document={doc}
+                previous={previous}
                 facts={
                   doc?.licenseClass ? <Row label="Hạng bằng lái">{doc.licenseClass}</Row> : null
                 }
@@ -199,10 +217,7 @@ export function DriverProfileView() {
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {vehicles.map((vehicle) => {
-              const doc =
-                [...(vehicle.verifications ?? [])].sort((a, b) =>
-                  b.createdAt.localeCompare(a.createdAt),
-                )[0] ?? null;
+              const [doc = null, ...previous] = newestFirst(vehicle.verifications ?? []);
               const target: ReviewTarget | null = doc && {
                 kind: "vehicle",
                 id: doc.id,
@@ -213,6 +228,7 @@ export function DriverProfileView() {
                   key={vehicle.id}
                   title={`${vehicle.make} ${vehicle.model} · ${vehicle.plateNumber}`}
                   document={doc}
+                  previous={previous}
                   facts={
                     <>
                       <Row label="Loại xe">
@@ -225,6 +241,7 @@ export function DriverProfileView() {
                     </>
                   }
                   busy={busyId === doc?.id}
+                  approveBlockedReason={vehicleApprovalBlocker(driverDocs, vehicle.vehicleType)}
                   onApprove={target ? () => approve(target) : undefined}
                   onReject={target ? () => setRejecting(target) : undefined}
                 />
@@ -232,6 +249,10 @@ export function DriverProfileView() {
             })}
           </div>
         )}
+      </section>
+
+      <section aria-label="Vi phạm của tài xế" className="mt-8">
+        <ViolationsSection userId={user.id} driverName={user.fullName} profile={profile} />
       </section>
 
       <ReasonDialog

@@ -150,6 +150,12 @@ export const PENDING_VEHICLE_VERIFICATIONS: TypedDocumentNode<{
             phone
             avatarUrl
           }
+          verifications {
+            id
+            type
+            status
+            licenseClass
+          }
         }
       }
     }
@@ -359,6 +365,7 @@ export const DRIVER_PROFILE: TypedDocumentNode<
       rejectionReason
       experienceYears
       noShowStrikeCount
+      suspendedUntil
       verifiedAt
       createdAt
       user {
@@ -835,7 +842,10 @@ export const USER_VIOLATIONS: TypedDocumentNode<
         tripId
         violationType
         penaltyAction
+        penaltyUntil
+        affectedPassengersCount
         isForgiven
+        forgivenReason
         createdAt
         trip {
           id
@@ -1135,7 +1145,17 @@ export const VIOLATIONS: TypedDocumentNode<
 `;
 
 export const FORGIVE_VIOLATION: TypedDocumentNode<
-  { adminForgiveViolation: Pick<DriverViolation, "id" | "isForgiven"> },
+  {
+    adminForgiveViolation: Pick<DriverViolation, "id" | "isForgiven" | "forgivenReason"> & {
+      driver: {
+        id: string;
+        driverProfile: Pick<
+          DriverProfile,
+          "id" | "noShowStrikeCount" | "suspendedUntil" | "verificationStatus"
+        > | null;
+      };
+    };
+  },
   { input: { violationId: string; reason: string } }
 > = gql`
   mutation ForgiveViolation($input: AdminForgiveViolationInput!) {
@@ -1143,6 +1163,16 @@ export const FORGIVE_VIOLATION: TypedDocumentNode<
       id
       isForgiven
       forgivenReason
+      # Hồ sơ sau khi tha, để báo hệ quả: số lần bỏ chuyến, tạm khoá, quyền tài xế.
+      driver {
+        id
+        driverProfile {
+          id
+          noShowStrikeCount
+          suspendedUntil
+          verificationStatus
+        }
+      }
     }
   }
 `;
