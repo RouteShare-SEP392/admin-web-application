@@ -1,3 +1,4 @@
+import { overdueHours } from "@/lib/report-rules";
 import type { OperationsOverview, OverviewKpi } from "@/lib/types";
 import { getStore, isActiveBooking, VN_OFFSET, type MockBooking } from "./store";
 
@@ -264,7 +265,7 @@ export function buildOperationsOverview(requestedRange: number): OperationsOverv
       ).length,
       usersToReview,
       openReports: openReports.length,
-      overdueReports: openReports.filter((r) => now - Date.parse(r.createdAt) > DAY).length,
+      overdueReports: openReports.filter((r) => overdueHours(r, now) !== null).length,
       unresolvedSos: store.sosEvents.filter((e) => e.resolvedAt === null).length,
     },
   };

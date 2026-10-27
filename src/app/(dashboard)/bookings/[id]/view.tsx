@@ -12,7 +12,6 @@ import {
   CardHeader,
   ErrorState,
   Fact,
-  MockBadge,
   TableSkeleton,
 } from "@/components/ui/misc";
 import { BOOKING_DETAIL } from "@/lib/graphql";
@@ -23,7 +22,6 @@ import {
   SETTLEMENT_STATUS,
   TRIP_STATUS,
 } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
 import { cn, formatCurrency, formatDateTime, formatDecimal } from "@/lib/utils";
 
 export function BookingDetailView() {
@@ -61,7 +59,6 @@ export function BookingDetailView() {
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="font-semibold text-brand-700 tabular-nums">{booking.bookingCode}</span>
           <StatusBadge meta={BOOKING_STATUS[booking.status]} />
-          {isProposedApiMocked() ? <MockBadge /> : null}
         </div>
         <h1 className="text-xl font-semibold">
           {booking.pickupStop.stopName} → {booking.dropoffStop.stopName}

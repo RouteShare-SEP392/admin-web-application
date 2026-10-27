@@ -26,7 +26,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ME, PENDING_COUNTS, SAFETY_COUNTS } from "@/lib/graphql";
-import { resolveMockMode } from "@/lib/mock-mode";
 import { cn } from "@/lib/utils";
 import { Avatar } from "./ui/misc";
 
@@ -78,12 +77,6 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
   },
 ];
 
-const MOCK_MODE_LABEL = {
-  all: "Dữ liệu mẫu: toàn bộ",
-  missing: "Dữ liệu mẫu: các trang chưa có API",
-  off: null,
-} as const;
-
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
@@ -111,7 +104,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     sos: safety?.unresolvedSos.total ?? 0,
   };
   const admin = meData?.me;
-  const mockLabel = MOCK_MODE_LABEL[resolveMockMode()];
 
   return (
     <div className="min-h-dvh lg:pl-64">
@@ -241,12 +233,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        {mockLabel ? (
-          <p className="mb-5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-900">
-            <span className="font-semibold">{mockLabel}.</span> Thay đổi chỉ lưu tạm trong
-            bộ nhớ và mất khi khởi động lại máy chủ.
-          </p>
-        ) : null}
         {children}
       </main>
     </div>

@@ -15,7 +15,6 @@ import {
   CardHeader,
   ErrorState,
   Fact,
-  MockBadge,
   TableSkeleton,
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
@@ -29,7 +28,6 @@ import {
   VEHICLE_TYPE,
   VERIFICATION_STATUS,
 } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import { errorMessage, formatDate, formatDateTime } from "@/lib/utils";
 
 export function UserDetailView() {
@@ -88,7 +86,6 @@ export function UserDetailView() {
               <h1 className="text-xl font-semibold">{user.fullName}</h1>
               <StatusBadge meta={USER_STATUS[user.status]} />
               {user.role === "ADMIN" ? <Badge tone="active">{USER_ROLE.ADMIN}</Badge> : null}
-              {isExistingApiMocked() ? <MockBadge /> : null}
             </div>
             <p className="mt-1 text-sm text-muted">
               Tham gia ngày {formatDate(user.createdAt)}

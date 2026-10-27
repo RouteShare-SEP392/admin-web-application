@@ -15,7 +15,6 @@ import {
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { PAYMENTS } from "@/lib/graphql";
 import { PAYMENT_METHOD, PAYMENT_STATUS, SETTLEMENT_STATUS } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { PaymentMethod, PaymentStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { formatCurrency, formatDateTime, formatNumber } from "@/lib/utils";
@@ -52,7 +51,6 @@ export function PaymentsView() {
       <PageHeader
         title="Thanh toán"
         description="Các lần hành khách thanh toán sau chuyến. RouteShare không giữ tiền hộ: trang này chỉ để tra cứu và đối soát."
-        mocked={isProposedApiMocked()}
       />
 
       {result ? (

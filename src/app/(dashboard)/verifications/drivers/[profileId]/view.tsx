@@ -13,7 +13,6 @@ import {
   Avatar,
   Card,
   ErrorState,
-  MockBadge,
   TableSkeleton,
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
@@ -25,7 +24,6 @@ import {
 } from "@/lib/graphql";
 import { documentsToResubmit, isSuspended, vehicleApprovalBlocker } from "@/lib/driver-rules";
 import { DRIVER_DOCUMENT_TYPE, VEHICLE_TYPE, VERIFICATION_STATUS } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { DriverVerificationType, VerificationStatus } from "@/lib/types";
 import { errorMessage, formatDate, formatDateTime } from "@/lib/utils";
 import { ViolationsSection } from "./violations-section";
@@ -137,7 +135,6 @@ export function DriverProfileView() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-semibold">{user.fullName}</h1>
               <StatusBadge meta={VERIFICATION_STATUS[profile.verificationStatus]} />
-              {isExistingApiMocked() ? <MockBadge /> : null}
             </div>
             <p className="mt-1 text-sm text-muted">
               {[user.phone, user.email].filter(Boolean).join(" · ") || "Chưa có thông tin liên hệ"}

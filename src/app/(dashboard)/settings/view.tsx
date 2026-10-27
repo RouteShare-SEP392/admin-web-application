@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { SYSTEM_SETTINGS, UPDATE_SYSTEM_SETTING } from "@/lib/graphql";
-import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { SystemSetting } from "@/lib/types";
 import { errorMessage, formatDateTime } from "@/lib/utils";
 
@@ -45,7 +44,6 @@ export function SettingsView() {
       <PageHeader
         title="Cấu hình hệ thống"
         description="Các tham số vận hành áp dụng cho toàn nền tảng. Thay đổi có hiệu lực với chuyến và đặt chỗ tạo sau đó."
-        mocked={isProposedApiMocked()}
       />
 
       <TripChangePolicyCard />

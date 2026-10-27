@@ -77,8 +77,7 @@ export function LoginForm() {
 
       {showDemoAccount ? (
         <div className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-brand-900">
-          <p className="font-semibold">Đang chạy bằng dữ liệu mẫu</p>
-          <p className="mt-1">
+          <p>
             Tài khoản: <code className="font-semibold">{MOCK_ADMIN_CREDENTIALS.identifier}</code>
             <br />
             Mật khẩu: <code className="font-semibold">{MOCK_ADMIN_CREDENTIALS.password}</code>

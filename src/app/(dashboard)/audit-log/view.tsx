@@ -14,7 +14,6 @@ import {
 import { Pagination } from "@/components/ui/table";
 import { AUDIT_LOGS } from "@/lib/graphql";
 import { AUDIT_ACTION } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { AuditAction } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 
@@ -47,7 +46,6 @@ export function AuditLogView() {
       <PageHeader
         title="Nhật ký thao tác"
         description="Các quyết định của quản trị viên, mới nhất xếp trước. Nhật ký chỉ ghi thêm, không sửa hay xoá được."
-        mocked={isProposedApiMocked()}
       />
 
       <Card>

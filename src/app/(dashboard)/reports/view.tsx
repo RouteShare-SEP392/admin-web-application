@@ -4,7 +4,7 @@ import { useQuery } from "@apollo/client/react";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { PersonCell } from "@/components/person-cell";
-import { StatusBadge } from "@/components/ui/badge";
+import { Badge, StatusBadge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import {
@@ -17,18 +17,20 @@ import {
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { REPORTS } from "@/lib/graphql";
 import { REPORT_STATUS } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
-import type { ReportStatus } from "@/lib/types";
+import { overdueHours, REPORT_OVERDUE_HOURS } from "@/lib/report-rules";
+import type { Report, ReportStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { formatDateTime } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 const STATUS_OPTIONS = Object.keys(REPORT_STATUS) as ReportStatus[];
+const OVERDUE_OPTIONS = ["1"] as const;
 
 export function ReportsView() {
-  // Bộ lọc nằm trên URL: /reports?q=...&status=...&page=...
+  // Bộ lọc nằm trên URL: /reports?q=...&status=...&overdue=1&page=...
   const url = useUrlState();
   const status = url.getOption("status", STATUS_OPTIONS);
+  const overdueOnly = url.getOption("overdue", OVERDUE_OPTIONS) === "1";
   const page = url.getPage();
   const query = url.getText("q");
   const [search, setSearch] = useUrlSearchText(query, (q) => url.setParams({ q, page: null }));
@@ -40,6 +42,7 @@ export function ReportsView() {
         pageSize: PAGE_SIZE,
         search: query || undefined,
         status: status || undefined,
+        overdueOnly: overdueOnly || undefined,
       },
     },
   });
@@ -50,7 +53,6 @@ export function ReportsView() {
       <PageHeader
         title="Báo cáo và khiếu nại"
         description="Báo cáo người dùng gửi về tài xế hoặc hành khách sau chuyến đi, mới gửi xếp trước."
-        mocked={isProposedApiMocked()}
       />
 
       <Card>
@@ -81,6 +83,17 @@ export function ReportsView() {
               </option>
             ))}
           </Select>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="size-4 accent-brand-700"
+              checked={overdueOnly}
+              onChange={(event) =>
+                url.setParams({ overdue: event.target.checked ? "1" : null, page: null })
+              }
+            />
+            Chỉ báo cáo quá hạn
+          </label>
         </div>
 
         {!result && loading ? (
@@ -89,8 +102,12 @@ export function ReportsView() {
           <ErrorState error={error} onRetry={() => refetch()} />
         ) : result.items.length === 0 ? (
           <EmptyState
-            title="Không có báo cáo phù hợp"
-            description="Thử đổi từ khoá hoặc bộ lọc."
+            title={overdueOnly ? "Không có báo cáo quá hạn" : "Không có báo cáo phù hợp"}
+            description={
+              overdueOnly
+                ? `Mọi báo cáo đang mở đều đã được nhận trong ${REPORT_OVERDUE_HOURS} giờ.`
+                : "Thử đổi từ khoá hoặc bộ lọc."
+            }
           />
         ) : (
           <>
@@ -125,7 +142,7 @@ export function ReportsView() {
                     </Td>
                     <Td className="whitespace-nowrap">{report.reporter.fullName}</Td>
                     <Td>
-                      <StatusBadge meta={REPORT_STATUS[report.status]} />
+                      <OverdueAwareStatus report={report} />
                     </Td>
                     <Td className="whitespace-nowrap text-muted">
                       {formatDateTime(report.createdAt)}
@@ -158,6 +175,24 @@ export function ReportsView() {
           </>
         )}
       </Card>
+    </>
+  );
+}
+
+/** Trạng thái báo cáo, kèm cảnh báo khi báo cáo OPEN đã chờ quá hạn mà chưa ai nhận. */
+function OverdueAwareStatus({ report }: { report: Pick<Report, "status" | "createdAt"> }) {
+  const waited = overdueHours(report);
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <StatusBadge meta={REPORT_STATUS[report.status]} />
+        {waited !== null ? <Badge tone="bad">Quá hạn</Badge> : null}
+      </div>
+      {waited !== null ? (
+        <p className="mt-1 text-xs whitespace-nowrap text-red-700">
+          Chờ {waited} giờ chưa ai nhận
+        </p>
+      ) : null}
     </>
   );
 }

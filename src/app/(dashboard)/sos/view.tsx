@@ -20,7 +20,6 @@ import {
 import { Pagination } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import { RESOLVE_SOS_EVENT, SAFETY_COUNTS, SOS_EVENTS } from "@/lib/graphql";
-import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { SosEvent } from "@/lib/types";
 import { useUrlState } from "@/lib/use-url-state";
 import { cn, errorMessage, formatDateTime } from "@/lib/utils";
@@ -72,7 +71,6 @@ export function SosView() {
       <PageHeader
         title="Sự cố SOS"
         description="Các lần người dùng bấm nút khẩn cấp trong chuyến. Sự cố chưa xử lý luôn nằm trên cùng; trang tự làm mới mỗi 30 giây."
-        mocked={isProposedApiMocked()}
         action={
           <Select
             aria-label="Tình trạng xử lý"

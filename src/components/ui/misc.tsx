@@ -1,4 +1,4 @@
-import { CircleAlert, FlaskConical, Inbox } from "lucide-react";
+import { CircleAlert, Inbox } from "lucide-react";
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn, errorMessage, initials } from "@/lib/utils";
 import { Button } from "./button";
@@ -35,21 +35,16 @@ export function CardHeader({
 export function PageHeader({
   title,
   description,
-  mocked,
   action,
 }: {
   title: string;
   description?: string;
-  mocked?: boolean;
   action?: ReactNode;
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          {mocked ? <MockBadge /> : null}
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
       </div>
       {action}
@@ -57,18 +52,6 @@ export function PageHeader({
   );
 }
 
-/** Đánh dấu trang đang hiển thị dữ liệu mẫu thay vì dữ liệu thật từ backend. */
-export function MockBadge() {
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-brand-900"
-      title="Backend chưa có API cho trang này. Dữ liệu đang hiển thị là dữ liệu mẫu."
-    >
-      <FlaskConical className="size-3.5" aria-hidden />
-      Dữ liệu mẫu
-    </span>
-  );
-}
 
 export function Avatar({
   name,

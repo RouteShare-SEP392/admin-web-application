@@ -24,7 +24,6 @@ import {
   REVIEW_DRIVER_VERIFICATION,
 } from "@/lib/graphql";
 import { DRIVER_DOCUMENT_TYPE } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { DriverVerificationType, VerificationStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { errorMessage, formatDate, formatDateTime } from "@/lib/utils";
@@ -102,7 +101,6 @@ export function DriverVerificationsView() {
       <PageHeader
         title="Duyệt hồ sơ tài xế"
         description="Căn cước công dân và giấy phép lái xe đang chờ xét duyệt, hồ sơ nộp trước xếp trên."
-        mocked={isExistingApiMocked()}
       />
 
       <Card>

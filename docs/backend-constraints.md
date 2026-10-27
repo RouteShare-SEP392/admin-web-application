@@ -215,7 +215,7 @@ Phụ thuộc module đặt chỗ chưa có. Tên trường của `AdminBooking`
 
 | API | Ràng buộc |
 | --- | --- |
-| `adminReports` | Lọc theo `status`. `search` khớp loại báo cáo, họ tên người báo cáo hoặc người bị báo cáo. Mới gửi trước. |
+| `adminReports` | Lọc theo `status`. `search` khớp loại báo cáo, họ tên người báo cáo hoặc người bị báo cáo. `overdueOnly = true` chỉ trả báo cáo `OPEN` gửi quá 24 giờ, cùng mốc với `overdueReports`. Mới gửi trước. |
 | `adminReport` | Trả kèm `reporter`, `reportedUser` (có `status` để biết đã bị khoá chưa), `trip`. |
 | `adminUpdateReportStatus` | Xem bảng chuyển trạng thái bên dưới. |
 
