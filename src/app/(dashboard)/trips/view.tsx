@@ -18,7 +18,6 @@ import {
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { TRIPS } from "@/lib/graphql";
 import { TRIP_STATUS } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { TripStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
@@ -60,7 +59,6 @@ export function TripsView() {
       <PageHeader
         title="Chuyến đi"
         description="Giám sát các chuyến tài xế đã đăng. Quản trị viên chỉ xem và huỷ chuyến vi phạm, không tạo hay sửa chuyến."
-        mocked={isExistingApiMocked()}
       />
 
       <Card>

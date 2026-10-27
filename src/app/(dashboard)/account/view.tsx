@@ -21,7 +21,6 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { AUDIT_LOGS, CHANGE_PASSWORD, ME } from "@/lib/graphql";
 import { USER_ROLE } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import { errorMessage, formatDate } from "@/lib/utils";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -113,14 +112,7 @@ function ChangePasswordCard() {
 
   return (
     <Card>
-      <CardHeader
-        title="Đổi mật khẩu"
-        description={
-          isExistingApiMocked()
-            ? "Đang chạy dữ liệu mẫu: mật khẩu mới chỉ có hiệu lực tới khi khởi động lại máy chủ."
-            : undefined
-        }
-      />
+      <CardHeader title="Đổi mật khẩu" />
       <form onSubmit={handleSubmit} className="space-y-4 p-5" noValidate>
         <Field label="Mật khẩu hiện tại" htmlFor="current-password">
           <Input

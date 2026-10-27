@@ -7,7 +7,7 @@ import { useState } from "react";
 import { BackLink } from "@/components/back-link";
 import { PersonCell } from "@/components/person-cell";
 import { TripRoute } from "@/components/trip-route";
-import { StatusBadge } from "@/components/ui/badge";
+import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button, buttonClass } from "@/components/ui/button";
 import { ReasonDialog } from "@/components/ui/dialog";
 import {
@@ -15,13 +15,13 @@ import {
   CardHeader,
   ErrorState,
   Fact,
-  MockBadge,
   TableSkeleton,
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { REPORT_DETAIL, SAFETY_COUNTS, UPDATE_REPORT_STATUS } from "@/lib/graphql";
 import { REPORT_STATUS, USER_STATUS } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
+import { overdueHours } from "@/lib/report-rules";
+import type { ReportStatus } from "@/lib/types";
 import { errorMessage, formatDateTime } from "@/lib/utils";
 
 type Closing = "RESOLVED" | "REJECTED";
@@ -66,25 +66,47 @@ export function ReportDetailView() {
 
   const isOpen = report.status === "OPEN";
   const isClosed = report.status === "RESOLVED" || report.status === "REJECTED";
+  const waited = overdueHours(report);
+
+  /**
+   * Cập nhật thất bại thường vì quản trị viên khác vừa xử lý báo cáo này. Tải lại
+   * để trang hiện đúng trạng thái và kết quả mới; trả về true nếu trạng thái đã đổi.
+   */
+  async function reloadAfterFailure(seen: ReportStatus): Promise<boolean> {
+    try {
+      const { data: fresh } = await refetch();
+      const changed = fresh?.adminReport.status !== undefined && fresh.adminReport.status !== seen;
+      if (changed) {
+        notify("Báo cáo vừa được quản trị viên khác cập nhật. Trang đã hiện trạng thái mới.", "error");
+      }
+      return changed;
+    } catch {
+      return false;
+    }
+  }
 
   async function takeOver() {
+    const seen = report!.status;
     try {
       await updateStatus({ variables: { input: { reportId: id, status: "UNDER_REVIEW" } } });
       notify("Bạn đã nhận xử lý báo cáo này.");
     } catch (cause) {
-      notify(errorMessage(cause), "error");
+      if (!(await reloadAfterFailure(seen))) notify(errorMessage(cause), "error");
     }
   }
 
   async function close(note: string) {
     if (!closing) return;
+    const seen = report!.status;
     setCloseError(null);
     try {
       await updateStatus({ variables: { input: { reportId: id, status: closing, note } } });
       notify(closing === "RESOLVED" ? "Đã đóng báo cáo: đã giải quyết." : "Đã bác bỏ báo cáo.");
       setClosing(null);
     } catch (cause) {
-      setCloseError(errorMessage(cause));
+      // Báo cáo đã đổi trạng thái thì đóng hộp thoại: ghi chú vừa gõ không còn áp dụng được.
+      if (await reloadAfterFailure(seen)) setClosing(null);
+      else setCloseError(errorMessage(cause));
     }
   }
 
@@ -96,10 +118,13 @@ export function ReportDetailView() {
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <StatusBadge meta={REPORT_STATUS[report.status]} />
-            {isProposedApiMocked() ? <MockBadge /> : null}
+            {waited !== null ? <Badge tone="bad">Quá hạn</Badge> : null}
           </div>
           <h1 className="text-xl font-semibold">{report.type}</h1>
-          <p className="mt-1 text-sm text-muted">Gửi lúc {formatDateTime(report.createdAt)}</p>
+          <p className="mt-1 text-sm text-muted">
+            Gửi lúc {formatDateTime(report.createdAt)}
+            {waited !== null ? ` · đã chờ ${waited} giờ chưa ai nhận` : ""}
+          </p>
         </div>
         {isClosed ? null : (
           <div className="flex flex-wrap gap-2">

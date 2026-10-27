@@ -17,7 +17,6 @@ import {
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { BOOKINGS } from "@/lib/graphql";
 import { BOOKING_STATUS } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
 import type { BookingStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
@@ -50,7 +49,6 @@ export function BookingsView() {
       <PageHeader
         title="Đặt chỗ"
         description="Mọi yêu cầu đặt chỗ của hành khách, mới đặt xếp trước. Quản trị viên chỉ tra cứu, không đặt hay huỷ thay người dùng."
-        mocked={isProposedApiMocked()}
       />
 
       <Card>

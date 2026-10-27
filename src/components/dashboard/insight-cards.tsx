@@ -1,6 +1,7 @@
 import { CircleAlert } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/misc";
+import { REPORT_OVERDUE_HOURS } from "@/lib/report-rules";
 import type { OperationsOverview } from "@/lib/types";
 import { cn, formatDecimal, formatNumber } from "@/lib/utils";
 import { DeltaBadge } from "./kpi-tile";
@@ -159,12 +160,13 @@ export function SafetyQueueCard({ safety }: { safety: OperationsOverview["safety
       tone: safety.unresolvedSos > 0 ? "bad" : "neutral",
     },
     {
-      href: "/reports?status=OPEN",
+      // Có báo cáo quá hạn thì mở thẳng danh sách quá hạn để thấy ngay báo cáo cần ưu tiên.
+      href: safety.overdueReports > 0 ? "/reports?overdue=1" : "/reports?status=OPEN",
       count: safety.openReports,
       title: "Báo cáo đang mở",
       detail:
         safety.overdueReports > 0
-          ? `${safety.overdueReports} báo cáo quá 24 giờ chưa xử lý`
+          ? `${safety.overdueReports} báo cáo quá ${REPORT_OVERDUE_HOURS} giờ chưa ai nhận`
           : "báo cáo người dùng gửi sau chuyến",
       tag: safety.overdueReports > 0 ? "Ưu tiên" : "Hàng đợi",
       tone: safety.overdueReports > 0 ? "warn" : "neutral",

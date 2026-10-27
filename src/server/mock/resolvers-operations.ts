@@ -9,6 +9,7 @@ import type {
   SosEvent,
   User,
 } from "@/lib/types";
+import { overdueHours } from "@/lib/report-rules";
 import { recordAudit } from "./audit";
 import {
   fail,
@@ -233,11 +234,19 @@ export const operationsResolvers = {
   adminReports({
     input,
   }: {
-    input?: (PageInput & { search?: string | null; status?: ReportStatus | null }) | null;
+    input?:
+      | (PageInput & {
+          search?: string | null;
+          status?: ReportStatus | null;
+          overdueOnly?: boolean | null;
+        })
+      | null;
   }) {
     const search = normalize(input?.search);
+    const now = Date.now();
     const items = getStore()
       .reports.filter((report) => !input?.status || report.status === input.status)
+      .filter((report) => !input?.overdueOnly || overdueHours(report, now) !== null)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map(toReport)
       .filter(

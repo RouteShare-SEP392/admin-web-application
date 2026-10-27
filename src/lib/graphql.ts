@@ -692,7 +692,7 @@ const REPORT_FIELDS = gql`
 
 export const REPORTS: TypedDocumentNode<
   { adminReports: Page<Report> },
-  { input: PageVars & { search?: string; status?: ReportStatus } }
+  { input: PageVars & { search?: string; status?: ReportStatus; overdueOnly?: boolean } }
 > = gql`
   query AdminReports($input: AdminReportsInput) {
     adminReports(input: $input) {

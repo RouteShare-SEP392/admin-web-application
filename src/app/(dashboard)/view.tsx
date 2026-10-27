@@ -13,10 +13,9 @@ import {
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { RecentTrips } from "@/components/dashboard/recent-trips";
 import { Button, buttonClass } from "@/components/ui/button";
-import { Card, ErrorState, MockBadge, Skeleton } from "@/components/ui/misc";
+import { Card, ErrorState, Skeleton } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { OPERATIONS_OVERVIEW, type RecentTripFilter } from "@/lib/graphql";
-import { isProposedApiMocked } from "@/lib/mock-mode";
 import { useUrlState } from "@/lib/use-url-state";
 import { cn, formatDateTime, formatNumber } from "@/lib/utils";
 
@@ -80,7 +79,6 @@ export function DashboardView() {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">Tổng quan vận hành</h1>
-            {isProposedApiMocked() ? <MockBadge /> : null}
           </div>
           <p className="mt-1 text-sm text-muted">
             {overview

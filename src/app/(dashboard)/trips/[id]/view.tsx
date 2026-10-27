@@ -16,14 +16,12 @@ import {
   CardHeader,
   ErrorState,
   Fact,
-  MockBadge,
   TableSkeleton,
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { Table, Td, Th, Tr } from "@/components/ui/table";
 import { BOOKINGS, CANCEL_TRIP, TRIP_DETAIL } from "@/lib/graphql";
 import { BOOKING_STATUS, LUGGAGE, STOP_TYPE, TRIP_STATUS, VEHICLE_TYPE } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { TripStop } from "@/lib/types";
 import {
   cn,
@@ -80,7 +78,6 @@ export function TripDetailView() {
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="font-semibold text-brand-700 tabular-nums">{trip.tripCode}</span>
             <StatusBadge meta={TRIP_STATUS[trip.status]} />
-            {isExistingApiMocked() ? <MockBadge /> : null}
           </div>
           <h1 className="text-xl font-semibold">
             {stops.length > 0

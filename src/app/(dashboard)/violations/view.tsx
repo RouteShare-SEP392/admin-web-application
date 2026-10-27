@@ -19,7 +19,6 @@ import {
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { VIOLATIONS } from "@/lib/graphql";
 import { PENALTY_ACTION, VIOLATION_TYPE } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { ViolationType } from "@/lib/types";
 import { useUrlState } from "@/lib/use-url-state";
 import { formatDateTime } from "@/lib/utils";
@@ -54,7 +53,6 @@ export function ViolationsView() {
       <PageHeader
         title="Vi phạm tài xế"
         description="Vi phạm do hệ thống tự ghi nhận khi tài xế bỏ chuyến, huỷ sát giờ hoặc bị báo cáo."
-        mocked={isExistingApiMocked()}
       />
 
       <Card>

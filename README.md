@@ -56,8 +56,6 @@ Dữ liệu mẫu nằm trong bộ nhớ của server Next.js. Thao tác duyệt
 | `/audit-log` | Nhật ký thao tác của quản trị viên | Đề xuất |
 | `/account` | Tài khoản của tôi: thông tin, đổi mật khẩu, thao tác gần đây | `me` đã có, đổi mật khẩu đề xuất |
 
-Trang dùng dữ liệu mẫu có nhãn "Dữ liệu mẫu" cạnh tiêu đề.
-
 ## Hợp đồng API cho backend
 
 Các API "Đề xuất" là những query và mutation backend chưa có. Tên, tham số và kiểu trả về được định nghĩa tại `PROPOSED_SDL` trong [src/server/mock/schema.ts](src/server/mock/schema.ts). Backend triển khai đúng hợp đồng này thì admin web chuyển sang API thật bằng cách đặt `NEXT_PUBLIC_API_MOCK=off`, không phải sửa trang nào.

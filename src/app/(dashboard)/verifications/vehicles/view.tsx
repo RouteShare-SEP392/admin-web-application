@@ -25,7 +25,6 @@ import {
 } from "@/lib/graphql";
 import { vehicleApprovalBlocker } from "@/lib/driver-rules";
 import { VEHICLE_TYPE, VERIFICATION_STATUS } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import type { VerificationStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
 import { errorMessage, formatDateTime } from "@/lib/utils";
@@ -100,7 +99,6 @@ export function VehicleVerificationsView() {
       <PageHeader
         title="Duyệt giấy tờ xe"
         description="Giấy đăng ký xe đang chờ xét duyệt. Đối chiếu biển số và loại xe với hạng bằng lái của chủ xe."
-        mocked={isExistingApiMocked()}
       />
 
       <Card>

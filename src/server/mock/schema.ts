@@ -503,6 +503,8 @@ export const PROPOSED_SDL = /* GraphQL */ `
     """Tìm theo loại báo cáo, họ tên người báo cáo hoặc người bị báo cáo"""
     search: String
     status: ReportStatus
+    """Chỉ báo cáo OPEN gửi quá 24 giờ, cùng mốc với overdueReports của Tổng quan"""
+    overdueOnly: Boolean
     page: Int = 1
     pageSize: Int = 10
   }

@@ -19,7 +19,6 @@ import { Table, Td, Th, Tr } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import { CREATE_ADMIN, ME, SUSPEND_USER, UNSUSPEND_USER, USERS } from "@/lib/graphql";
 import { USER_STATUS } from "@/lib/labels";
-import { isExistingApiMocked } from "@/lib/mock-mode";
 import { errorMessage, formatDate } from "@/lib/utils";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -67,7 +66,6 @@ export function AdminsView() {
       <PageHeader
         title="Quản trị viên"
         description="Những tài khoản đăng nhập được vào trang quản trị. Mọi quản trị viên hiện có cùng quyền."
-        mocked={isExistingApiMocked()}
         action={
           <Button onClick={() => setCreating(true)}>
             <UserPlus className="size-4" aria-hidden />
