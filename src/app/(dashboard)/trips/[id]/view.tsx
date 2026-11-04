@@ -1,4 +1,5 @@
 "use client";
+import { TripChangeAudit } from "@/components/trip-operations/trip-change-audit";
 
 import { useMutation, useQuery } from "@apollo/client/react";
 import { ArrowLeft, Ban } from "lucide-react";
@@ -35,7 +36,9 @@ import {
 
 export function TripDetailView() {
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, refetch } = useQuery(TRIP_DETAIL, { variables: { id } });
+  const { data, loading, error, refetch } = useQuery(TRIP_DETAIL, {
+    variables: { id },
+  });
   const [cancel, { loading: cancelling }] = useMutation(CANCEL_TRIP);
   const notify = useToast();
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -48,7 +51,11 @@ export function TripDetailView() {
       <>
         <BackLink />
         <Card>
-          {loading ? <TableSkeleton /> : <ErrorState error={error} onRetry={() => refetch()} />}
+          {loading ? (
+            <TableSkeleton />
+          ) : (
+            <ErrorState error={error} onRetry={() => refetch()} />
+          )}
         </Card>
       </>
     );
@@ -122,7 +129,10 @@ export function TripDetailView() {
             <RouteSketch stops={stops} polyline={trip.routePolyline} />
             <ol>
               {stops.map((stop, index) => (
-                <li key={stop.id} className="relative flex gap-4 pb-5 last:pb-0">
+                <li
+                  key={stop.id}
+                  className="relative flex gap-4 pb-5 last:pb-0"
+                >
                   {index < stops.length - 1 ? (
                     <span
                       aria-hidden
@@ -144,7 +154,9 @@ export function TripDetailView() {
                       <p className="font-medium">{stop.stopName}</p>
                       <p className="text-sm text-muted tabular-nums">
                         {formatTime(
-                          index === 0 ? stop.plannedDepartureTime : stop.plannedArrivalTime,
+                          index === 0
+                            ? stop.plannedDepartureTime
+                            : stop.plannedArrivalTime,
                         )}
                       </p>
                     </div>
@@ -167,20 +179,28 @@ export function TripDetailView() {
                 {trip.availableSeats}/{trip.totalSeatsOffered}
               </Fact>
               <Fact label="Giá mỗi km, mỗi ghế">
-                {trip.pricing ? formatCurrency(trip.pricing.baseCostPerKm) : "—"}
+                {trip.pricing
+                  ? formatCurrency(trip.pricing.baseCostPerKm)
+                  : "—"}
               </Fact>
               <Fact label="Tổng chi phí chia sẻ ước tính">
-                {trip.pricing ? formatCurrency(trip.pricing.totalEstimatedFare) : "—"}
+                {trip.pricing
+                  ? formatCurrency(trip.pricing.totalEstimatedFare)
+                  : "—"}
               </Fact>
               <Fact label="Hành lý">{LUGGAGE[trip.luggageAllowed]}</Fact>
               <Fact label="Đặt chỗ">
-                {trip.isInstantBooking ? "Xác nhận ngay" : "Tài xế duyệt từng yêu cầu"}
+                {trip.isInstantBooking
+                  ? "Xác nhận ngay"
+                  : "Tài xế duyệt từng yêu cầu"}
               </Fact>
               <Fact label="Tạo lúc">{formatDateTime(trip.createdAt)}</Fact>
             </dl>
             {trip.driverNotes ? (
               <p className="border-t border-line px-5 py-4 text-sm">
-                <span className="mb-1 block text-muted">Ghi chú của tài xế</span>
+                <span className="mb-1 block text-muted">
+                  Ghi chú của tài xế
+                </span>
                 {trip.driverNotes}
               </p>
             ) : null}
@@ -190,17 +210,23 @@ export function TripDetailView() {
             <CardHeader title="Tài xế và phương tiện" />
             <div className="space-y-4 p-5">
               {trip.driver ? (
-                <PersonCell person={trip.driver} href={`/users/${trip.driver.id}`} />
+                <PersonCell
+                  person={trip.driver}
+                  href={`/users/${trip.driver.id}`}
+                />
               ) : (
                 <p className="text-sm text-muted">Không có thông tin tài xế.</p>
               )}
               {trip.vehicle ? (
                 <dl className="divide-y divide-line border-t border-line pt-2">
                   <Fact label="Xe">
-                    {trip.vehicle.make} {trip.vehicle.model} · {trip.vehicle.color}
+                    {trip.vehicle.make} {trip.vehicle.model} ·{" "}
+                    {trip.vehicle.color}
                   </Fact>
                   <Fact label="Biển số">{trip.vehicle.plateNumber}</Fact>
-                  <Fact label="Loại xe">{VEHICLE_TYPE[trip.vehicle.vehicleType]}</Fact>
+                  <Fact label="Loại xe">
+                    {VEHICLE_TYPE[trip.vehicle.vehicleType]}
+                  </Fact>
                 </dl>
               ) : null}
             </div>
@@ -208,6 +234,7 @@ export function TripDetailView() {
         </div>
       </div>
 
+      <TripChangeAudit tripId={id} />
       <ReasonDialog
         open={cancelOpen}
         onClose={() => {
