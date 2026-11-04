@@ -54,6 +54,12 @@ export function TripsView() {
 
   return (
     <>
+      <Link
+        href="/trip-operations"
+        className="mb-4 inline-flex font-medium text-brand-700"
+      >
+        Lịch định kỳ & thay đổi chuyến →
+      </Link>
       <PageHeader
         title="Chuyến đi"
         description="Giám sát các chuyến tài xế đã đăng. Quản trị viên chỉ xem và huỷ chuyến vi phạm, không tạo hay sửa chuyến."
@@ -123,29 +129,42 @@ export function TripsView() {
                 {result.items.map((trip) => (
                   <Tr key={trip.id}>
                     <Td>
-                      <Link href={`/trips/${trip.id}`} className="block hover:text-brand-700">
+                      <Link
+                        href={`/trips/${trip.id}`}
+                        className="block hover:text-brand-700"
+                      >
                         <TripRoute stops={trip.stops} />
                       </Link>
                     </Td>
                     <Td>
                       {trip.driver ? (
-                        <PersonCell person={trip.driver} href={`/users/${trip.driver.id}`} />
+                        <PersonCell
+                          person={trip.driver}
+                          href={`/users/${trip.driver.id}`}
+                        />
                       ) : (
                         <span className="text-muted">—</span>
                       )}
                     </Td>
-                    <Td className="whitespace-nowrap">{formatDateTime(trip.departureTime)}</Td>
+                    <Td className="whitespace-nowrap">
+                      {formatDateTime(trip.departureTime)}
+                    </Td>
                     <Td className="text-right whitespace-nowrap tabular-nums">
                       {trip.availableSeats}/{trip.totalSeatsOffered}
                     </Td>
                     <Td className="text-right whitespace-nowrap tabular-nums">
-                      {trip.pricing ? formatCurrency(trip.pricing.baseCostPerKm) : "—"}
+                      {trip.pricing
+                        ? formatCurrency(trip.pricing.baseCostPerKm)
+                        : "—"}
                     </Td>
                     <Td>
                       <StatusBadge meta={TRIP_STATUS[trip.status]} />
                     </Td>
                     <Td className="text-right">
-                      <Link href={`/trips/${trip.id}`} className={buttonClass("secondary", "sm")}>
+                      <Link
+                        href={`/trips/${trip.id}`}
+                        className={buttonClass("secondary", "sm")}
+                      >
                         Chi tiết
                       </Link>
                     </Td>
