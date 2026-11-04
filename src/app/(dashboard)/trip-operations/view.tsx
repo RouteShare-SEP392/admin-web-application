@@ -2,6 +2,7 @@
 import { RecurringTemplates } from "@/components/trip-operations/recurring-templates";
 import { useState } from "react";
 import Link from "next/link";
+import { TripChangeAudit } from "@/components/trip-operations/trip-change-audit";
 import { RecurringBatchAudit } from "@/components/trip-operations/recurring-batch-audit";
 import { useSearchParams } from "next/navigation";
 export function TripOperationsView() {
@@ -46,6 +47,10 @@ export function TripOperationsView() {
       {error && <p className="text-red-600">{error}</p>}
       <RecurringTemplates
         key={`templates-${applied}-${templateId}`}
+        filter={filter}
+      />
+      <TripChangeAudit
+        key={`changes-${applied}-${templateId}`}
         filter={filter}
       />
       <RecurringBatchAudit
