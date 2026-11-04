@@ -1,4 +1,5 @@
 "use client";
+import { TripChangePolicyCard } from "@/components/trip-operations/trip-change-policy-card";
 
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useState, type FormEvent } from "react";
@@ -23,8 +24,14 @@ const SETTING_META: Record<string, { label: string; unit: string }> = {
   MIN_COST_PER_KM: { label: "Giá sàn mỗi km", unit: "đ/km/ghế" },
   MAX_COST_PER_KM: { label: "Giá trần mỗi km", unit: "đ/km/ghế" },
   SEARCH_RADIUS_METERS: { label: "Bán kính tìm chuyến", unit: "mét" },
-  MIN_DEPARTURE_LEAD_MINUTES: { label: "Thời gian chờ tối thiểu trước khởi hành", unit: "phút" },
-  BOOKING_EXPIRY_MINUTES: { label: "Thời hạn phản hồi yêu cầu đặt chỗ", unit: "phút" },
+  MIN_DEPARTURE_LEAD_MINUTES: {
+    label: "Thời gian chờ tối thiểu trước khởi hành",
+    unit: "phút",
+  },
+  BOOKING_EXPIRY_MINUTES: {
+    label: "Thời hạn phản hồi yêu cầu đặt chỗ",
+    unit: "phút",
+  },
   NO_SHOW_STRIKE_LIMIT: { label: "Giới hạn số lần bỏ chuyến", unit: "lần" },
 };
 
@@ -40,6 +47,7 @@ export function SettingsView() {
         mocked={isProposedApiMocked()}
       />
 
+      <TripChangePolicyCard />
       <Card>
         {!settings && loading ? (
           <TableSkeleton />
@@ -75,9 +83,13 @@ function SettingRow({ setting }: { setting: SystemSetting }) {
     setRowError(null);
     try {
       const result = await update({
-        variables: { input: { settingKey: setting.settingKey, settingValue: value.trim() } },
+        variables: {
+          input: { settingKey: setting.settingKey, settingValue: value.trim() },
+        },
       });
-      setValue(result.data?.adminUpdateSystemSetting.settingValue ?? value.trim());
+      setValue(
+        result.data?.adminUpdateSystemSetting.settingValue ?? value.trim(),
+      );
       notify(`Đã lưu "${label}".`);
     } catch (cause) {
       setRowError(errorMessage(cause));
