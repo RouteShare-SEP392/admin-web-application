@@ -1,5 +1,6 @@
 "use client";
 import { RecurringTemplates } from "@/components/trip-operations/recurring-templates";
+import { RecurringTemplateChanges } from "@/components/trip-operations/recurring-template-changes";
 import { useState } from "react";
 import Link from "next/link";
 import { TripChangeAudit } from "@/components/trip-operations/trip-change-audit";
@@ -51,6 +52,10 @@ export function TripOperationsView() {
       />
       <TripChangeAudit
         key={`changes-${applied}-${templateId}`}
+        filter={filter}
+      />
+      <RecurringTemplateChanges
+        key={`template-changes-${applied}-${templateId}`}
         filter={filter}
       />
       <RecurringBatchAudit

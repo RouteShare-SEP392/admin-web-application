@@ -12,3 +12,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Consult ../ROUTESHARE_MASTER_CONTEXT.md for recurring publication and trip-change policy. Driver/passenger flows are native mobile; this app provides ADMIN-only post-action oversight and typed policy configuration.
 - Recurring and change audit panels use real backend APIs, cursor pagination and read-only evidence. Keep mocked proposed admin actions separate. Provider acceptance is not device delivery or reading; edits/cancellations do not automatically establish fault.
+
+- Recurring template change history is read-only and cursor-paginated through `adminRecurringTemplateChanges`; show persisted before/after revisions without inferring fault.

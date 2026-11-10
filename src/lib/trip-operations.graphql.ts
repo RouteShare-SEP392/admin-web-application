@@ -163,3 +163,76 @@ export const RECURRING_TEMPLATE_AUDIT: TypedDocumentNode<
     }
   }
 `;
+
+export interface TemplateRevision {
+  version: number;
+  weekdays: number[];
+  localTime: string;
+  originName: string;
+  destinationName: string;
+  maxStopWaitMinutes: number;
+  maxWaypointDistanceMeters: number;
+  trip: {
+    vehicleId: string;
+    totalSeatsOffered: number;
+    costPerKm: number;
+    isInstantBooking: boolean;
+    driverNotes?: string | null;
+    waypoints: { stopName: string; plannedDepartureTime?: string | null }[];
+  };
+}
+export interface TemplateChangeAudit {
+  id: string;
+  templateId: string;
+  ownerId: string;
+  ownerName: string;
+  createdAt: string;
+  operation: string;
+  before?: TemplateRevision | null;
+  after: TemplateRevision;
+}
+export const RECURRING_TEMPLATE_CHANGES: TypedDocumentNode<
+  { adminRecurringTemplateChanges: CursorPage<TemplateChangeAudit> },
+  { filter: AuditFilter }
+> = gql`
+  fragment TemplateRevisionFields on RecurringTemplateRevisionView {
+    version
+    weekdays
+    localTime
+    originName
+    destinationName
+    maxStopWaitMinutes
+    maxWaypointDistanceMeters
+    trip {
+      vehicleId
+      totalSeatsOffered
+      costPerKm
+      isInstantBooking
+      driverNotes
+      waypoints {
+        stopName
+        plannedDepartureTime
+      }
+    }
+  }
+  query RecurringTemplateChanges($filter: TripAuditFilter) {
+    adminRecurringTemplateChanges(filter: $filter) {
+      items {
+        id
+        templateId
+        ownerId
+        ownerName
+        createdAt
+        operation
+        before {
+          ...TemplateRevisionFields
+        }
+        after {
+          ...TemplateRevisionFields
+        }
+      }
+      hasNextPage
+      endCursor
+    }
+  }
+`;
