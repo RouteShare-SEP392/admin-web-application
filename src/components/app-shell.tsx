@@ -104,12 +104,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="flex h-16 items-center justify-between px-5">
           <Link href="/" className="flex items-center gap-2.5" onClick={() => setMenuOpen(false)}>
-            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-accent text-brand-900">
-              <Route className="size-5" aria-hidden />
-            </span>
+            <img
+              src="/routeshare-logo.png"
+              alt="RouteShare"
+              className="size-8 shrink-0 rounded-lg object-contain"
+            />
             <span className="leading-tight">
               <span className="block font-semibold">RouteShare</span>
-              <span className="block text-xs text-brand-300">Trang quản trị</span>
             </span>
           </Link>
           <button
