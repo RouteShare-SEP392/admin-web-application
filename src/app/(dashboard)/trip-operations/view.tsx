@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { TripChangeAudit } from "@/components/trip-operations/trip-change-audit";
 import { RecurringBatchAudit } from "@/components/trip-operations/recurring-batch-audit";
+import { RecurringWorkAudit } from "@/components/trip-operations/recurring-work-audit";
 import { useSearchParams } from "next/navigation";
 export function TripOperationsView() {
   const params = useSearchParams();
@@ -58,6 +59,7 @@ export function TripOperationsView() {
         key={`template-changes-${applied}-${templateId}`}
         filter={filter}
       />
+      <RecurringWorkAudit />
       <RecurringBatchAudit
         key={`batches-${applied}-${templateId}`}
         filter={filter}
