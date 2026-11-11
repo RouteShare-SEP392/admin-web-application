@@ -152,8 +152,29 @@ export const EXISTING_SDL = /* GraphQL */ `
     cancelledBy: ID
     pricing: TripPricing
     stops: [TripStop]!
+    actualStartedAt: DateTime
+    actualCompletedAt: DateTime
+    originalDepartureTime: DateTime
+    bookings: [TripBookingMilestone!]
     createdAt: DateTime!
     updatedAt: DateTime!
+  }
+
+  type TripBookingMilestone {
+    id: ID!
+    passengerId: ID!
+    passengerName: String!
+    passengerPhone: String
+    seatsBooked: Int!
+    pickupLabel: String!
+    plannedPickupTime: DateTime!
+    arrivedAt: DateTime
+    boardedAt: DateTime
+    dropoffLabel: String!
+    plannedDropoffTime: DateTime!
+    alightedAt: DateTime
+    status: String!
+    totalAmount: String
   }
 
   input AdminReviewDriverVerificationInput {
