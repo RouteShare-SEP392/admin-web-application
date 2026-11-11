@@ -1,5 +1,6 @@
 "use client";
 import { TripChangePolicyCard } from "@/components/trip-operations/trip-change-policy-card";
+import { RecurringSettings } from "@/components/trip-operations/recurring-settings";
 
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useState, type FormEvent } from "react";
@@ -48,6 +49,7 @@ export function SettingsView() {
       />
 
       <TripChangePolicyCard />
+      <RecurringSettings />
       <Card>
         {!settings && loading ? (
           <TableSkeleton />
