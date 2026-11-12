@@ -11,6 +11,16 @@ export function resolveMockMode(): MockMode {
   return raw === "missing" || raw === "off" ? raw : "all";
 }
 
+/** Trang chỉ dùng API backend đã có: chỉ là dữ liệu mẫu khi mock toàn bộ. */
+export function isExistingApiMocked(): boolean {
+  return resolveMockMode() === "all";
+}
+
+/** Trang dùng API admin backend chưa có: dữ liệu mẫu trừ khi tắt mock. */
+export function isProposedApiMocked(): boolean {
+  return resolveMockMode() !== "off";
+}
+
 /** Tài khoản đăng nhập khi NEXT_PUBLIC_API_MOCK=all (không cần chạy backend). */
 export const MOCK_ADMIN_CREDENTIALS = {
   identifier: "admin@routeshare.vn",

@@ -4,11 +4,9 @@ import { TripChangeAudit } from "@/components/trip-operations/trip-change-audit"
 
 import { useMutation, useQuery } from "@apollo/client/react";
 import { Ban } from "lucide-react";
-import { Ban } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { BackLink } from "@/components/back-link";
 import { BackLink } from "@/components/back-link";
 import { PersonCell } from "@/components/person-cell";
 import { RouteSketch } from "@/components/route-sketch";
@@ -23,9 +21,6 @@ import {
   TableSkeleton,
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
-import { Table, Td, Th, Tr } from "@/components/ui/table";
-import { BOOKINGS, CANCEL_TRIP, TRIP_DETAIL } from "@/lib/graphql";
-import { BOOKING_STATUS, LUGGAGE, STOP_TYPE, TRIP_STATUS, VEHICLE_TYPE } from "@/lib/labels";
 import { Table, Td, Th, Tr } from "@/components/ui/table";
 import { BOOKINGS, CANCEL_TRIP, TRIP_DETAIL } from "@/lib/graphql";
 import { BOOKING_STATUS, LUGGAGE, STOP_TYPE, TRIP_STATUS, VEHICLE_TYPE } from "@/lib/labels";
@@ -56,7 +51,6 @@ export function TripDetailView() {
     return (
       <>
         <BackLink href="/trips" label="Danh sách chuyến đi" />
-        <BackLink href="/trips" label="Danh sách chuyến đi" />
         <Card>
           {loading ? (
             <TableSkeleton />
@@ -86,12 +80,10 @@ export function TripDetailView() {
   return (
     <>
       <BackLink href="/trips" label="Danh sách chuyến đi" />
-      <BackLink href="/trips" label="Danh sách chuyến đi" />
 
       <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-brand-700 tabular-nums">{trip.tripCode}</span>
             <span className="font-semibold text-brand-700 tabular-nums">{trip.tripCode}</span>
             <StatusBadge meta={TRIP_STATUS[trip.status]} />
           </div>
@@ -194,16 +186,6 @@ export function TripDetailView() {
               </Fact>
               <Fact label="Khách đã chia sẻ chi phí">
                 {trip.sharedCostTotal === null ? "—" : formatCurrency(trip.sharedCostTotal)}
-              <Fact label="Ghế đã đặt / ghế chia sẻ">
-                {trip.bookedSeats}/{trip.totalSeatsOffered}
-              </Fact>
-              <Fact label="Tỷ lệ trùng tuyến trung bình">
-                {trip.averageMatchPercent === null
-                  ? "Chưa có khách"
-                  : `${Math.round(trip.averageMatchPercent)}%`}
-              </Fact>
-              <Fact label="Khách đã chia sẻ chi phí">
-                {trip.sharedCostTotal === null ? "—" : formatCurrency(trip.sharedCostTotal)}
               </Fact>
               <Fact label="Giá mỗi km, mỗi ghế">
                 {trip.pricing
@@ -266,8 +248,6 @@ export function TripDetailView() {
       <TripMilestoneAudit trip={trip} />
       <TripChangeAudit tripId={id} />
 
-      <TripPassengers tripId={trip.id} />
-
       <ReasonDialog
         open={cancelOpen}
         onClose={() => {
@@ -295,67 +275,7 @@ function TripPassengers({ tripId }: { tripId: string }) {
   });
   const result = data?.adminBookings;
 
-/** Các đặt chỗ trên chuyến: ai đi chặng nào, trả bao nhiêu, đang ở trạng thái gì. */
-function TripPassengers({ tripId }: { tripId: string }) {
-  const { data, loading, error, refetch } = useQuery(BOOKINGS, {
-    // Một chuyến có ít ghế nên lấy hết đặt chỗ trong một trang.
-    variables: { input: { tripId, page: 1, pageSize: 50 } },
-  });
-  const result = data?.adminBookings;
-
   return (
-    <Card className="mt-6">
-      <CardHeader title={result ? `Hành khách (${result.total})` : "Hành khách"} />
-      {!result && loading ? (
-        <TableSkeleton rows={2} />
-      ) : !result ? (
-        <ErrorState error={error} onRetry={() => refetch()} />
-      ) : result.total === 0 ? (
-        <p className="px-5 py-6 text-sm text-muted">Chưa có ai đặt chỗ trên chuyến này.</p>
-      ) : (
-        <Table>
-          <thead>
-            <tr>
-              <Th>Mã đặt chỗ</Th>
-              <Th>Hành khách</Th>
-              <Th>Chặng đi</Th>
-              <Th className="text-right">Khách trả</Th>
-              <Th>Trạng thái</Th>
-              <Th>Đặt lúc</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {result.items.map((booking) => (
-              <Tr key={booking.id}>
-                <Td>
-                  <Link
-                    href={`/bookings/${booking.id}`}
-                    className="font-semibold whitespace-nowrap text-brand-700 tabular-nums hover:underline"
-                  >
-                    {booking.bookingCode}
-                  </Link>
-                </Td>
-                <Td>
-                  <PersonCell person={booking.passenger} href={`/users/${booking.passenger.id}`} />
-                </Td>
-                <Td>
-                  {booking.pickupStop.stopName} → {booking.dropoffStop.stopName}
-                </Td>
-                <Td className="text-right whitespace-nowrap tabular-nums">
-                  {booking.totalAmount > 0 ? formatCurrency(booking.totalAmount) : "—"}
-                </Td>
-                <Td>
-                  <StatusBadge meta={BOOKING_STATUS[booking.status]} />
-                </Td>
-                <Td className="whitespace-nowrap text-muted">
-                  {formatDateTime(booking.requestedAt)}
-                </Td>
-              </Tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
-    </Card>
     <Card className="mt-6">
       <CardHeader title={result ? `Hành khách (${result.total})` : "Hành khách"} />
       {!result && loading ? (
