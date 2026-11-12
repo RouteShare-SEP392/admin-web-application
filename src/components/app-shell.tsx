@@ -27,6 +27,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ME, PENDING_COUNTS, SAFETY_COUNTS } from "@/lib/graphql";
 import { cn } from "@/lib/utils";
+import { Logo } from "./logo";
 import { Avatar } from "./ui/misc";
 
 interface NavItem {
@@ -124,11 +125,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="flex h-16 items-center justify-between px-5">
           <Link href="/" className="flex items-center gap-2.5" onClick={() => setMenuOpen(false)}>
-            <img
-              src="/routeshare-logo.png"
-              alt="RouteShare"
-              className="size-8 shrink-0 rounded-lg object-contain"
-            />
+            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-accent text-brand-900">
+              <Route className="size-5" aria-hidden />
+            </span>
             <span className="leading-tight">
               <span className="block font-semibold">RouteShare</span>
             </span>

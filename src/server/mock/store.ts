@@ -1,5 +1,12 @@
 import { MOCK_ADMIN_CREDENTIALS } from "@/lib/mock-mode";
+import { MOCK_ADMIN_CREDENTIALS } from "@/lib/mock-mode";
 import type {
+  AuditLog,
+  EmergencyContact,
+  PaymentMethod,
+  PaymentStatus,
+  ReportStatus,
+  SettlementStatus,
   AuditLog,
   EmergencyContact,
   PaymentMethod,
@@ -114,10 +121,90 @@ export interface MockSosEvent {
 /** Đặt chỗ đang giữ ghế hoặc đã đi xong. */
 export function isActiveBooking(status: BookingStatus): boolean {
   return status === "PENDING" || status === "CONFIRMED" || status === "COMPLETED";
+  bookings: MockBooking[];
+  auditLogs: AuditLog[];
+  /** Mật khẩu của các tài khoản quản trị mẫu, theo id người dùng. */
+  credentials: Record<string, string>;
+  payments: MockPayment[];
+  reports: MockReport[];
+  sosEvents: MockSosEvent[];
+  emergencyContacts: (EmergencyContact & { userId: string })[];
+}
+
+export type BookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "COMPLETED"
+  | "EXPIRED";
+
+/** Đặt chỗ rút gọn: backend chưa có module booking, lớp mock chỉ giữ đủ để tính chỉ số. */
+export interface MockBooking {
+  id: string;
+  /** Mã ngắn để đọc và tra cứu, ví dụ BK-20417. */
+  code: string;
+  tripId: string;
+  passengerId: string;
+  seats: number;
+  status: BookingStatus;
+  createdAt: number;
+  respondedAt: number | null;
+  /** Phần trăm lộ trình của tài xế mà khách đi cùng. */
+  overlapPercent: number;
+  /** Quãng đường tài xế phải đi thêm để đón và trả khách này. */
+  detourKm: number;
+  /** Phần chi phí khách này chia sẻ. */
+  amount: number;
+}
+
+/** Thanh toán rút gọn; số tiền được suy ra từ đặt chỗ khi trả về cho giao diện. */
+export interface MockPayment {
+  id: string;
+  bookingId: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  transactionReference: string | null;
+  createdAt: number;
+  paidAt: number | null;
+  settlementStatus: SettlementStatus | null;
+  settledAt: number | null;
+}
+
+export interface MockReport {
+  id: string;
+  reporterId: string;
+  reportedUserId: string;
+  tripId: string | null;
+  type: string;
+  description: string;
+  status: ReportStatus;
+  resolutionNote: string | null;
+  resolvedById: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+
+export interface MockSosEvent {
+  id: string;
+  userId: string;
+  tripId: string | null;
+  latitude: number;
+  longitude: number;
+  triggeredAt: string;
+  resolvedAt: string | null;
+  resolvedById: string | null;
+  notes: string | null;
+}
+
+/** Đặt chỗ đang giữ ghế hoặc đã đi xong. */
+export function isActiveBooking(status: BookingStatus): boolean {
+  return status === "PENDING" || status === "CONFIRMED" || status === "COMPLETED";
 }
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
+export const VN_OFFSET = 7 * HOUR;
 export const VN_OFFSET = 7 * HOUR;
 
 const NAMES = [
@@ -488,25 +575,93 @@ function createStore(): MockStore {
 
   const addTrip = (departure: number) => {
     const i = trips.length;
+  const bookings: MockBooking[] = [];
+  // users[0] là admin, users[1..12] có hồ sơ tài xế, phần còn lại đóng vai hành khách.
+  const passengerIds = users.slice(13).map((u) => u.id);
+  const startOfToday = Math.floor((now + VN_OFFSET) / DAY) * DAY - VN_OFFSET;
+
+  const addTrip = (departure: number) => {
+    const i = trips.length;
     const driverIndex = i % 7;
     const driver = users[driverIndex + 1];
     const vehicle = vehicles[driverIndex];
     const route = pick(ROUTES);
     const stops = rand() < 0.4 ? [...route.stops].reverse() : route.stops;
+    const route = pick(ROUTES);
+    const stops = rand() < 0.4 ? [...route.stops].reverse() : route.stops;
     const arrival = departure + route.minutes * 60_000;
 
     const roll = rand();
+    const roll = rand();
     let status: TripStatus;
     if (arrival < now) {
+      status = roll < 0.07 ? "CANCELLED" : roll < 0.11 ? "EXPIRED" : "COMPLETED";
       status = roll < 0.07 ? "CANCELLED" : roll < 0.11 ? "EXPIRED" : "COMPLETED";
     } else if (departure <= now) {
       status = "IN_PROGRESS";
     } else {
       status = roll < 0.06 ? "DRAFT" : roll < 0.12 ? "CANCELLED" : "PUBLISHED";
+      status = roll < 0.06 ? "DRAFT" : roll < 0.12 ? "CANCELLED" : "PUBLISHED";
     }
 
     const totalSeatsOffered = between(1, vehicle.seatCapacity - 1);
     const costPerKm = between(8, 25) * 100;
+    const createdAt = Math.min(
+      departure - between(1, 5) * DAY - between(0, 10) * HOUR,
+      now - between(5, 600) * 60_000,
+    );
+
+    // Đặt chỗ của chuyến: nguồn dữ liệu cho các chỉ số ghép tuyến ở trang tổng quan.
+    const requestCount =
+      status === "DRAFT" || status === "EXPIRED"
+        ? 0
+        : status === "PUBLISHED"
+          ? between(0, totalSeatsOffered)
+          : status === "CANCELLED"
+            ? between(0, Math.min(2, totalSeatsOffered))
+            : between(1, totalSeatsOffered);
+    const tripBookings: MockBooking[] = [];
+    for (let b = 0; b < requestCount; b++) {
+      const r = rand();
+      const bookingStatus: BookingStatus =
+        status === "COMPLETED"
+          ? r < 0.8 ? "COMPLETED" : r < 0.9 ? "CANCELLED" : "REJECTED"
+          : status === "IN_PROGRESS"
+            ? "CONFIRMED"
+            : status === "CANCELLED"
+              ? "CANCELLED"
+              : r < 0.6 ? "CONFIRMED" : r < 0.85 ? "PENDING" : r < 0.93 ? "REJECTED" : "CANCELLED";
+      const requestedAt =
+        createdAt + rand() * (Math.min(departure, now) - createdAt);
+      const responseMinutes = rand() < 0.78 ? between(1, 14) : between(16, 180);
+      tripBookings.push({
+        id: mockId("b0000000", bookings.length + tripBookings.length + 1),
+        code: `BK-${20001 + bookings.length + tripBookings.length}`,
+        tripId: mockId("t0000000", i + 1),
+        passengerId: pick(passengerIds),
+        seats: 1,
+        status: bookingStatus,
+        createdAt: requestedAt,
+        respondedAt:
+          bookingStatus === "PENDING" ? null : requestedAt + responseMinutes * 60_000,
+        overlapPercent: between(55, 98),
+        detourKm: Number((0.3 + rand() * 2.7).toFixed(1)),
+        amount: 0,
+      });
+    }
+    const active = tripBookings.filter((b) => isActiveBooking(b.status));
+    for (const booking of active) {
+      // Chia đều chi phí đoạn đi chung cho tài xế và các khách, làm tròn nghìn đồng.
+      booking.amount =
+        Math.round(
+          (route.km * (booking.overlapPercent / 100) * costPerKm) /
+            (1 + active.length) /
+            1000,
+        ) * 1000;
+    }
+    bookings.push(...tripBookings);
+    const bookedSeats = active.reduce((sum, b) => sum + b.seats, 0);
+
     const createdAt = Math.min(
       departure - between(1, 5) * DAY - between(0, 10) * HOUR,
       now - between(5, 600) * 60_000,
@@ -643,6 +798,7 @@ function createStore(): MockStore {
     trips.push({
       id: mockId("t0000000", i + 1),
       tripCode: "",
+      tripCode: "",
       status,
       driverId: driver.id,
       driver,
@@ -657,6 +813,14 @@ function createStore(): MockStore {
       totalDurationMinutes: route.minutes,
       totalSeatsOffered,
       availableSeats:
+        status === "PUBLISHED" || status === "DRAFT" ? totalSeatsOffered - bookedSeats : 0,
+      bookedSeats,
+      averageMatchPercent: active.length
+        ? Math.round(active.reduce((sum, b) => sum + b.overlapPercent, 0) / active.length)
+        : null,
+      sharedCostTotal: active.length
+        ? active.reduce((sum, b) => sum + b.amount, 0)
+        : null,
         status === "PUBLISHED" || status === "DRAFT" ? totalSeatsOffered - bookedSeats : 0,
       bookedSeats,
       averageMatchPercent: active.length
@@ -713,6 +877,37 @@ function createStore(): MockStore {
     .forEach((trip, order) => {
       trip.tripCode = `RS-${4400 + order}`;
     });
+  };
+
+  // 62 ngày trước đến 6 ngày tới: đủ để so sánh kỳ 30 ngày với kỳ liền trước.
+  const DEPARTURE_HOURS = [6, 6, 7, 7, 8, 9, 12, 16, 17, 17, 18, 20];
+  for (let day = -62; day <= 6; day++) {
+    const dayStart = startOfToday + day * DAY;
+    const weekday = new Date(dayStart + VN_OFFSET).getUTCDay();
+    const isWeekend = weekday === 0 || weekday === 6;
+    const count = (isWeekend ? 4 : 6) + between(0, 2) + (day > -20 ? 1 : 0);
+    for (let n = 0; n < count; n++) {
+      addTrip(dayStart + pick(DEPARTURE_HOURS) * HOUR + between(0, 59) * 60_000);
+    }
+  }
+  // Hai chuyến vừa khởi hành để luôn có dữ liệu "đang chạy".
+  addTrip(now - 40 * 60_000);
+  addTrip(now - 15 * 60_000);
+
+  // Số chuyến đã đi của mỗi hành khách khớp với lịch sử đặt chỗ của họ.
+  for (const user of users) {
+    if (passengerIds.includes(user.id)) {
+      user.totalRidesAsPassenger = bookings.filter(
+        (b) => b.passengerId === user.id && b.status === "COMPLETED",
+      ).length;
+    }
+  }
+
+  [...trips]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach((trip, order) => {
+      trip.tripCode = `RS-${4400 + order}`;
+    });
   for (let i = 0; i < 7; i++) {
     users[i + 1].ratingAsDriver = Number((4.3 + rand() * 0.7).toFixed(2));
   }
@@ -731,6 +926,8 @@ function createStore(): MockStore {
   const pastTrips = trips.filter((t) => Date.parse(t.estimatedArrivalTime) < now);
   const violations: DriverViolation[] = VIOLATION_PLAN.map(
     ([violationType, penaltyAction, affectedPassengersCount], i) => {
+      // Lấy các chuyến đã kết thúc gần đây nhất để vi phạm không quá cũ.
+      const trip = pastTrips[pastTrips.length - 2 - i * 9];
       // Lấy các chuyến đã kết thúc gần đây nhất để vi phạm không quá cũ.
       const trip = pastTrips[pastTrips.length - 2 - i * 9];
       const createdAt = Date.parse(trip.estimatedArrivalTime) + 2 * HOUR;
@@ -763,6 +960,114 @@ function createStore(): MockStore {
       };
     },
   );
+
+  // ----- Thanh toán: mỗi đặt chỗ đã đi xong có một lần thanh toán sau chuyến -----
+  const tripsById = new Map(trips.map((trip) => [trip.id, trip]));
+  const payments: MockPayment[] = [];
+  for (const booking of bookings) {
+    if (booking.status !== "COMPLETED") continue;
+    const arrival = Date.parse(tripsById.get(booking.tripId)!.estimatedArrivalTime);
+    const createdAt = arrival + 5 * 60_000;
+    const method = pick<PaymentMethod>(["VIETQR", "VIETQR", "MOMO", "CASH"]);
+    const roll = rand();
+    const status: PaymentStatus =
+      roll < 0.03 ? "FAILED" : arrival > now - 6 * HOUR && roll < 0.5 ? "PENDING" : "PAID";
+    const paidAt = status === "PAID" ? createdAt + between(1, 90) * 60_000 : null;
+    const settled = paidAt !== null && method !== "CASH" && paidAt < now - DAY;
+    payments.push({
+      id: mockId("p0000000", payments.length + 1),
+      bookingId: booking.id,
+      method,
+      status,
+      transactionReference:
+        method === "CASH" ? null : `${method}${pad(between(1, 99999999), 8)}`,
+      createdAt,
+      paidAt,
+      settlementStatus:
+        method === "CASH" || paidAt === null ? null : settled ? "SETTLED" : "PENDING",
+      settledAt: settled ? paidAt! + DAY : null,
+    });
+  }
+
+  // ----- Báo cáo của người dùng -----
+  const REPORT_PLAN: [ReportStatus, number, string, string, boolean][] = [
+    ["OPEN", 2, "Lái xe không an toàn", "Tài xế vượt ẩu và dùng điện thoại khi đang chạy trên cao tốc.", false],
+    ["OPEN", 5, "Đến trễ", "Tài xế đến điểm đón trễ hơn 30 phút và không báo trước.", false],
+    ["OPEN", 9, "Thái độ không phù hợp", "Hành khách to tiếng và đòi dừng xe ngoài điểm đã hẹn.", true],
+    ["OPEN", 30, "Yêu cầu trả thêm tiền", "Tài xế yêu cầu trả thêm tiền mặt ngoài số tiền trên ứng dụng.", false],
+    ["OPEN", 50, "Không đến điểm đón", "Tôi chờ ở điểm đón 40 phút nhưng tài xế không tới và không nghe máy.", false],
+    ["UNDER_REVIEW", 28, "Lái xe không an toàn", "Xe chạy quá tốc độ suốt chặng, tôi đã nhắc nhưng tài xế không giảm.", false],
+    ["UNDER_REVIEW", 40, "Huỷ sát giờ", "Hành khách huỷ khi tôi đã tới điểm đón.", true],
+    ["RESOLVED", 96, "Yêu cầu trả thêm tiền", "Tài xế thu thêm 50.000đ tiền gửi xe.", false],
+    ["RESOLVED", 150, "Thái độ không phù hợp", "Tài xế nói chuyện thiếu tôn trọng với hành khách nữ.", false],
+    ["RESOLVED", 220, "Đến trễ", "Tài xế tới trễ 20 phút.", false],
+    ["REJECTED", 130, "Xe không đúng mô tả", "Xe tới đón khác màu so với thông tin trên ứng dụng.", false],
+    ["REJECTED", 300, "Thái độ không phù hợp", "Hành khách không chào hỏi.", true],
+  ];
+  const reportable = bookings.filter((b) => b.status === "COMPLETED").slice(-80);
+  const reports: MockReport[] = REPORT_PLAN.map(
+    ([status, hoursAgo, type, description, byDriver], i) => {
+      const booking = reportable[(i * 7 + 3) % reportable.length];
+      const trip = tripsById.get(booking.tripId)!;
+      const createdAt = now - hoursAgo * HOUR;
+      const closed = status === "RESOLVED" || status === "REJECTED";
+      return {
+        id: mockId("r0000000", i + 1),
+        reporterId: byDriver ? trip.driverId : booking.passengerId,
+        reportedUserId: byDriver ? booking.passengerId : trip.driverId,
+        tripId: trip.id,
+        type,
+        description,
+        status,
+        resolutionNote: !closed
+          ? null
+          : status === "RESOLVED"
+            ? "Đã liên hệ hai bên, xác nhận đúng sự việc và nhắc nhở người bị báo cáo."
+            : "Không đủ căn cứ: nội dung báo cáo không vi phạm quy định của nền tảng.",
+        resolvedById: closed ? admin.id : null,
+        resolvedAt: closed ? iso(createdAt + 20 * HOUR) : null,
+        createdAt: iso(createdAt),
+      };
+    },
+  );
+
+  // ----- Sự cố SOS và liên hệ khẩn cấp -----
+  const RELATIONSHIPS = ["Mẹ", "Bố", "Vợ", "Chồng", "Anh trai", "Chị gái", "Bạn thân"];
+  const emergencyContacts = users.slice(1).flatMap((user, i) =>
+    Array.from({ length: 1 + (i % 2) }, (_, n) => ({
+      id: mockId("ec000000", i * 2 + n + 1),
+      userId: user.id,
+      name: NAMES[(i * 3 + n * 5 + 7) % NAMES.length],
+      phone: `09${pad(10000000 + between(0, 89999999), 8)}`,
+      relationship: RELATIONSHIPS[(i + n * 3) % RELATIONSHIPS.length],
+    })),
+  );
+  const runningTrip = trips.find((t) => t.status === "IN_PROGRESS" && t.bookedSeats > 0);
+  const SOS_PLAN: [number, string | null][] = [
+    [12, null],
+    [26 * 60, "Đã gọi cho hành khách: xe bị thủng lốp trên cao tốc, tài xế đã thay lốp và đi tiếp an toàn."],
+    [4 * 24 * 60, "Hành khách bấm nhầm khi cất điện thoại. Đã gọi xác nhận, không có sự cố."],
+    [9 * 24 * 60, "Va chạm nhẹ với xe máy, không ai bị thương. Đã liên hệ cả tài xế và người thân của hành khách."],
+  ];
+  const sosEvents: MockSosEvent[] = SOS_PLAN.map(([minutesAgo, notes], i) => {
+    const trip = i === 0 && runningTrip ? runningTrip : tripsById.get(reportable[i * 11].tripId)!;
+    const rider = bookings.find((b) => b.tripId === trip.id && isActiveBooking(b.status));
+    // Vị trí nằm giữa hai điểm dừng đầu của chuyến.
+    const [from, to] = trip.stops;
+    const progress = 0.3 + i * 0.15;
+    const triggeredAt = now - minutesAgo * 60_000;
+    return {
+      id: mockId("so000000", i + 1),
+      userId: rider?.passengerId ?? trip.driverId,
+      tripId: trip.id,
+      latitude: Number((from.latitude + (to.latitude - from.latitude) * progress).toFixed(5)),
+      longitude: Number((from.longitude + (to.longitude - from.longitude) * progress).toFixed(5)),
+      triggeredAt: iso(triggeredAt),
+      resolvedAt: notes ? iso(triggeredAt + 25 * 60_000) : null,
+      resolvedById: notes ? admin.id : null,
+      notes,
+    };
+  });
 
   // ----- Thanh toán: mỗi đặt chỗ đã đi xong có một lần thanh toán sau chuyến -----
   const tripsById = new Map(trips.map((trip) => [trip.id, trip]));
@@ -970,16 +1275,94 @@ function seedAuditLogs(
   return entries
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map((entry, index) => ({ ...entry, id: mockId("al000000", index + 1), actor: admin }));
+    bookings,
+    auditLogs: seedAuditLogs(admin, driverVerifications, vehicleVerifications, violations, users),
+    credentials: { [admin.id]: MOCK_ADMIN_CREDENTIALS.password },
+    payments,
+    reports,
+    sosEvents,
+    emergencyContacts,
+  };
+}
+
+/** Dựng nhật ký ban đầu từ các quyết định đã có sẵn trong dữ liệu mẫu. */
+function seedAuditLogs(
+  admin: User,
+  driverDocs: DriverVerification[],
+  vehicleDocs: VehicleVerification[],
+  violations: DriverViolation[],
+  users: User[],
+): AuditLog[] {
+  const entries: Omit<AuditLog, "id" | "actor">[] = [];
+  for (const doc of driverDocs) {
+    if (!doc.reviewedAt) continue;
+    const kind = doc.type === "IDENTITY_CARD" ? "CCCD" : "GPLX";
+    entries.push({
+      action: doc.status === "REJECTED" ? "DRIVER_DOCUMENT_REJECTED" : "DRIVER_DOCUMENT_APPROVED",
+      targetType: "DRIVER_PROFILE",
+      targetId: doc.driverProfile.id,
+      targetLabel: `${kind} của ${doc.driverProfile.user.fullName}`,
+      detail: doc.rejectReason,
+      createdAt: doc.reviewedAt,
+    });
+  }
+  for (const doc of vehicleDocs) {
+    if (!doc.reviewedAt) continue;
+    entries.push({
+      action:
+        doc.status === "REJECTED" ? "VEHICLE_DOCUMENT_REJECTED" : "VEHICLE_DOCUMENT_APPROVED",
+      targetType: "DRIVER_PROFILE",
+      targetId: doc.vehicle.driverProfile.id,
+      targetLabel: `Giấy đăng ký xe ${doc.vehicle.plateNumber}`,
+      detail: doc.rejectReason,
+      createdAt: doc.reviewedAt,
+    });
+  }
+  for (const violation of violations) {
+    if (!violation.isForgiven) continue;
+    entries.push({
+      action: "VIOLATION_FORGIVEN",
+      targetType: "VIOLATION",
+      targetId: violation.id,
+      targetLabel: `Vi phạm của ${violation.driver.fullName}`,
+      detail: violation.forgivenReason,
+      // Dữ liệu mẫu không lưu thời điểm tha: lấy một ngày sau khi ghi nhận vi phạm.
+      createdAt: new Date(Date.parse(violation.createdAt) + DAY).toISOString(),
+    });
+  }
+  for (const user of users) {
+    if (user.status !== "SUSPENDED") continue;
+    const suspendedAt = new Date(Date.parse(user.createdAt) + 6 * DAY).toISOString();
+    user.updatedAt = suspendedAt;
+    entries.push({
+      action: "USER_SUSPENDED",
+      targetType: "USER",
+      targetId: user.id,
+      targetLabel: user.fullName,
+      detail: "Nhiều hành khách phản ánh thái độ không phù hợp.",
+      createdAt: suspendedAt,
+    });
+  }
+  return entries
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((entry, index) => ({ ...entry, id: mockId("al000000", index + 1), actor: admin }));
 }
 
 // Giữ kho trên globalThis để không bị tạo lại mỗi lần Next.js biên dịch lại module.
 // Tăng SEED_VERSION khi đổi cấu trúc dữ liệu mẫu, để server dev đang chạy tạo kho mới.
 const SEED_VERSION = 5;
+// Tăng SEED_VERSION khi đổi cấu trúc dữ liệu mẫu, để server dev đang chạy tạo kho mới.
+const SEED_VERSION = 5;
 const globalStore = globalThis as typeof globalThis & {
+  __routeshareMockStore?: { version: number; store: MockStore };
   __routeshareMockStore?: { version: number; store: MockStore };
 };
 
 export function getStore(): MockStore {
+  if (globalStore.__routeshareMockStore?.version !== SEED_VERSION) {
+    globalStore.__routeshareMockStore = { version: SEED_VERSION, store: createStore() };
+  }
+  return globalStore.__routeshareMockStore.store;
   if (globalStore.__routeshareMockStore?.version !== SEED_VERSION) {
     globalStore.__routeshareMockStore = { version: SEED_VERSION, store: createStore() };
   }
