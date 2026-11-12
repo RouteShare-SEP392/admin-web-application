@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { Avatar } from "./ui/misc";
 
 interface Person {
@@ -10,10 +11,18 @@ interface Person {
 }
 
 /** Ô "người dùng" trong bảng: ảnh đại diện, họ tên và một dòng liên hệ. */
-export function PersonCell({ person, href }: { person: Person; href?: string }) {
+export function PersonCell({
+  person,
+  href,
+  className,
+}: {
+  person: Person;
+  href?: string;
+  className?: string;
+}) {
   const contact = person.email ?? person.phone;
   return (
-    <div className="flex min-w-44 items-center gap-3">
+    <div className={cn("flex min-w-44 items-center gap-2.5", className)}>
       <Avatar name={person.fullName} src={person.avatarUrl} />
       <div className="min-w-0 leading-tight">
         {href ? (

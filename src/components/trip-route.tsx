@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StopSummary {
   stopName: string;
@@ -6,7 +7,13 @@ interface StopSummary {
 }
 
 /** Tóm tắt lộ trình trên một dòng: điểm đi → điểm đến, kèm số điểm dừng giữa chừng. */
-export function TripRoute({ stops }: { stops: (StopSummary | null)[] }) {
+export function TripRoute({
+  stops,
+  className,
+}: {
+  stops: (StopSummary | null)[];
+  className?: string;
+}) {
   const ordered = stops
     .filter((stop): stop is StopSummary => stop !== null)
     .sort((a, b) => a.sequenceOrder - b.sequenceOrder);
@@ -14,7 +21,7 @@ export function TripRoute({ stops }: { stops: (StopSummary | null)[] }) {
   const intermediate = ordered.length - 2;
 
   return (
-    <div className="min-w-52 leading-tight">
+    <div className={cn("min-w-52 leading-tight", className)}>
       <p className="flex flex-wrap items-center gap-x-1.5 font-medium">
         {ordered[0].stopName}
         <ArrowRight className="size-3.5 shrink-0 text-subtle" aria-label="đến" />

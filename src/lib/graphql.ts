@@ -304,6 +304,8 @@ export const TRIPS: TypedDocumentNode<
         id
         status
         departureTime
+        actualStartedAt
+        actualCompletedAt
         totalDistanceKm
         totalSeatsOffered
         availableSeats
@@ -379,6 +381,25 @@ export const TRIP_DETAIL: TypedDocumentNode<{ adminTrip: Trip }, { id: string }>
         longitude
         plannedArrivalTime
         plannedDepartureTime
+      }
+      actualStartedAt
+      actualCompletedAt
+      originalDepartureTime
+      bookings {
+        id
+        passengerId
+        passengerName
+        passengerPhone
+        seatsBooked
+        pickupLabel
+        plannedPickupTime
+        arrivedAt
+        boardedAt
+        dropoffLabel
+        plannedDropoffTime
+        alightedAt
+        status
+        totalAmount
       }
     }
   }

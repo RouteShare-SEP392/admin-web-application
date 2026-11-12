@@ -6,6 +6,7 @@ import type {
   PenaltyAction,
   SystemSetting,
   Trip,
+  TripBookingMilestone,
   TripStatus,
   User,
   Vehicle,
@@ -420,6 +421,82 @@ function createStore(): MockStore {
     const totalSeatsOffered = between(1, vehicle.seatCapacity - 1);
     const costPerKm = between(8, 25) * 100;
     const cancelled = status === "CANCELLED";
+
+    let actualStartedAt: string | null = null;
+    let actualCompletedAt: string | null = null;
+    let startVarianceMinutes = 0;
+    if (status === "IN_PROGRESS" || status === "COMPLETED") {
+      startVarianceMinutes = i % 5 === 0 ? -5 : i % 5 === 1 ? 2 : i % 5 === 2 ? 14 : i % 5 === 3 ? 25 : 0;
+      actualStartedAt = iso(departure + startVarianceMinutes * 60_000);
+      if (status === "COMPLETED") {
+        actualCompletedAt = iso(arrival + (startVarianceMinutes + between(-3, 8)) * 60_000);
+      }
+    }
+
+    const tripStops = stops.map(([stopName, stopAddress, latitude, longitude], s) => {
+      const at = departure + (s / (stops.length - 1)) * route.minutes * 60_000;
+      return {
+        id: mockId("ts000000", i * 10 + s + 1),
+        stopName,
+        stopAddress,
+        stopType:
+          s === 0
+            ? "ORIGIN" as const
+            : s === stops.length - 1
+              ? "DESTINATION" as const
+              : "INTERMEDIATE_STOP" as const,
+        sequenceOrder: s,
+        latitude,
+        longitude,
+        plannedArrivalTime: iso(at),
+        plannedDepartureTime: iso(at + (s === 0 ? 0 : 5 * 60_000)),
+      };
+    });
+
+    const bookings: TripBookingMilestone[] = [];
+    if (status !== "DRAFT" && !cancelled) {
+      const passengerCount = between(1, Math.min(3, totalSeatsOffered));
+      for (let b = 0; b < passengerCount; b++) {
+        const passengerUser = users[(i * 2 + b + 8) % users.length];
+        const pickIdx = 0;
+        const dropIdx = tripStops.length - 1;
+        const plannedPick = Date.parse(tripStops[pickIdx].plannedDepartureTime);
+        const plannedDrop = Date.parse(tripStops[dropIdx].plannedArrivalTime);
+
+        let arrivedAt: string | null = null;
+        let boardedAt: string | null = null;
+        let alightedAt: string | null = null;
+
+        if (status === "IN_PROGRESS" || status === "COMPLETED") {
+          const pickDelayMin = (b === 0 ? startVarianceMinutes : startVarianceMinutes + between(-2, 8));
+          const arrTime = plannedPick + pickDelayMin * 60_000;
+          arrivedAt = iso(arrTime);
+          // Wait time 3-9 mins before passenger boards
+          boardedAt = iso(arrTime + between(3, 9) * 60_000);
+          if (status === "COMPLETED") {
+            alightedAt = iso(plannedDrop + (startVarianceMinutes + between(0, 10)) * 60_000);
+          }
+        }
+
+        bookings.push({
+          id: mockId("bk000000", i * 10 + b + 1),
+          passengerId: passengerUser.id,
+          passengerName: passengerUser.fullName,
+          passengerPhone: passengerUser.phone,
+          seatsBooked: 1,
+          pickupLabel: tripStops[pickIdx].stopName,
+          plannedPickupTime: iso(plannedPick),
+          arrivedAt,
+          boardedAt,
+          dropoffLabel: tripStops[dropIdx].stopName,
+          plannedDropoffTime: iso(plannedDrop),
+          alightedAt,
+          status: status === "COMPLETED" ? "COMPLETED" : "CONFIRMED",
+          totalAmount: `${Math.round(costPerKm * route.km * 0.9)}`,
+        });
+      }
+    }
+
     trips.push({
       id: mockId("t0000000", i + 1),
       status,
@@ -428,6 +505,9 @@ function createStore(): MockStore {
       vehicleId: vehicle.id,
       vehicle,
       departureTime: iso(departure),
+      actualStartedAt,
+      actualCompletedAt,
+      originalDepartureTime: iso(departure),
       estimatedArrivalTime: iso(arrival),
       totalDistanceKm: route.km,
       totalDurationMinutes: route.minutes,
@@ -447,25 +527,8 @@ function createStore(): MockStore {
         baseCostPerKm: costPerKm,
         totalEstimatedFare: Math.round(route.km * costPerKm),
       },
-      stops: stops.map(([stopName, stopAddress, latitude, longitude], s) => {
-        const at = departure + (s / (stops.length - 1)) * route.minutes * 60_000;
-        return {
-          id: mockId("ts000000", i * 10 + s + 1),
-          stopName,
-          stopAddress,
-          stopType:
-            s === 0
-              ? "ORIGIN"
-              : s === stops.length - 1
-                ? "DESTINATION"
-                : "INTERMEDIATE_STOP",
-          sequenceOrder: s,
-          latitude,
-          longitude,
-          plannedArrivalTime: iso(at),
-          plannedDepartureTime: iso(at + (s === 0 ? 0 : 5 * 60_000)),
-        };
-      }),
+      stops: tripStops,
+      bookings,
       createdAt: iso(departure - between(1, 5) * DAY),
       updatedAt: iso(Math.min(arrival, now)),
     });

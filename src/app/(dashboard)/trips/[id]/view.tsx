@@ -1,4 +1,5 @@
 "use client";
+import { TripMilestoneAudit } from "@/components/trip-monitoring/trip-milestone-audit";
 import { TripChangeAudit } from "@/components/trip-operations/trip-change-audit";
 
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -234,6 +235,7 @@ export function TripDetailView() {
         </div>
       </div>
 
+      <TripMilestoneAudit trip={trip} />
       <TripChangeAudit tripId={id} />
       <ReasonDialog
         open={cancelOpen}

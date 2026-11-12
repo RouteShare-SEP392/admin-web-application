@@ -163,8 +163,29 @@ export interface Trip {
   cancelledBy: string | null;
   pricing: TripPricing | null;
   stops: TripStop[];
+  actualStartedAt?: string | null;
+  actualCompletedAt?: string | null;
+  originalDepartureTime?: string | null;
+  bookings?: TripBookingMilestone[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TripBookingMilestone {
+  id: string;
+  passengerId: string;
+  passengerName: string;
+  passengerPhone?: string | null;
+  seatsBooked: number;
+  pickupLabel: string;
+  plannedPickupTime: string;
+  arrivedAt?: string | null;
+  boardedAt?: string | null;
+  dropoffLabel: string;
+  plannedDropoffTime: string;
+  alightedAt?: string | null;
+  status: string;
+  totalAmount?: string | null;
 }
 
 export interface DriverViolation {

@@ -5,8 +5,9 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { PersonCell } from "@/components/person-cell";
+import { computeDepartureVariance } from "@/components/trip-monitoring/trip-milestone-audit";
 import { TripRoute } from "@/components/trip-route";
-import { StatusBadge } from "@/components/ui/badge";
+import { Badge, StatusBadge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import {
@@ -116,51 +117,69 @@ export function TripsView() {
             <Table>
               <thead>
                 <tr>
-                  <Th>Lộ trình</Th>
-                  <Th>Tài xế</Th>
-                  <Th>Khởi hành</Th>
-                  <Th className="text-right">Ghế trống</Th>
-                  <Th className="text-right">Giá mỗi km</Th>
-                  <Th>Trạng thái</Th>
-                  <Th className="text-right">Thao tác</Th>
+                  <Th className="px-2.5 first:pl-4">Lộ trình</Th>
+                  <Th className="px-2.5">Tài xế</Th>
+                  <Th className="px-2.5">Khởi hành</Th>
+                  <Th className="px-2.5 text-center whitespace-nowrap">Ghế trống</Th>
+                  <Th className="px-2.5 text-right whitespace-nowrap">Giá mỗi km</Th>
+                  <Th className="px-2.5 text-center whitespace-nowrap">Trạng thái</Th>
+                  <Th className="px-2.5 text-right whitespace-nowrap last:pr-4">Thao tác</Th>
                 </tr>
               </thead>
               <tbody>
                 {result.items.map((trip) => (
                   <Tr key={trip.id}>
-                    <Td>
+                    <Td className="px-2.5 first:pl-4">
                       <Link
                         href={`/trips/${trip.id}`}
                         className="block hover:text-brand-700"
                       >
-                        <TripRoute stops={trip.stops} />
+                        <TripRoute stops={trip.stops} className="min-w-44" />
                       </Link>
                     </Td>
-                    <Td>
+                    <Td className="px-2.5">
                       {trip.driver ? (
                         <PersonCell
                           person={trip.driver}
                           href={`/users/${trip.driver.id}`}
+                          className="min-w-36"
                         />
                       ) : (
                         <span className="text-muted">—</span>
                       )}
                     </Td>
-                    <Td className="whitespace-nowrap">
-                      {formatDateTime(trip.departureTime)}
+                    <Td className="px-2.5">
+                      <div className="whitespace-nowrap">
+                        {formatDateTime(trip.departureTime)}
+                      </div>
+                      {(() => {
+                        const variance = computeDepartureVariance(
+                          trip.departureTime,
+                          trip.actualStartedAt,
+                          trip.status,
+                        );
+                        if (variance.tone === "neutral" && !variance.isOverdue) return null;
+                        return (
+                          <div className="mt-1" title={variance.label}>
+                            <Badge tone={variance.tone} className="text-[11px] px-2 py-0">
+                              {variance.shortLabel}
+                            </Badge>
+                          </div>
+                        );
+                      })()}
                     </Td>
-                    <Td className="text-right whitespace-nowrap tabular-nums">
+                    <Td className="px-2.5 text-center whitespace-nowrap tabular-nums">
                       {trip.availableSeats}/{trip.totalSeatsOffered}
                     </Td>
-                    <Td className="text-right whitespace-nowrap tabular-nums">
+                    <Td className="px-2.5 text-right whitespace-nowrap tabular-nums">
                       {trip.pricing
                         ? formatCurrency(trip.pricing.baseCostPerKm)
                         : "—"}
                     </Td>
-                    <Td>
+                    <Td className="px-2.5 text-center whitespace-nowrap">
                       <StatusBadge meta={TRIP_STATUS[trip.status]} />
                     </Td>
-                    <Td className="text-right">
+                    <Td className="px-2.5 text-right whitespace-nowrap last:pr-4">
                       <Link
                         href={`/trips/${trip.id}`}
                         className={buttonClass("secondary", "sm")}
