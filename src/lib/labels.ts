@@ -7,6 +7,7 @@ import type {
   PaymentStatus,
   PenaltyAction,
   ReportStatus,
+  ReportType,
   SettlementStatus,
   StopType,
   TripStatus,
@@ -145,6 +146,18 @@ export const SETTLEMENT_STATUS: Record<SettlementStatus, StatusMeta> = {
   SETTLED: { label: "Đã chuyển", tone: "good" },
   FAILED: { label: "Chuyển lỗi", tone: "bad" },
   CANCELLED: { label: "Đã huỷ", tone: "neutral" },
+};
+
+export const REPORT_TYPE: Record<ReportType, string> = {
+  UNSAFE_DRIVING: "Lái xe không an toàn",
+  HARASSMENT: "Quấy rối",
+  RUDE_BEHAVIOR: "Thái độ không phù hợp",
+  LATE_ARRIVAL: "Đến trễ",
+  NO_SHOW: "Không đến điểm đón",
+  LATE_CANCELLATION: "Huỷ sát giờ",
+  FARE_DISPUTE: "Tranh chấp tiền",
+  WRONG_VEHICLE: "Xe không đúng mô tả",
+  OTHER: "Khác",
 };
 
 export const REPORT_STATUS: Record<ReportStatus, StatusMeta> = {

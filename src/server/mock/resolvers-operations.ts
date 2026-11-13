@@ -6,6 +6,7 @@ import type {
   PaymentStatus,
   Report,
   ReportStatus,
+  ReportType,
   SosEvent,
   User,
 } from "@/lib/types";
@@ -238,6 +239,7 @@ export const operationsResolvers = {
       | (PageInput & {
           search?: string | null;
           status?: ReportStatus | null;
+          type?: ReportType | null;
           overdueOnly?: boolean | null;
         })
       | null;
@@ -246,13 +248,14 @@ export const operationsResolvers = {
     const now = Date.now();
     const items = getStore()
       .reports.filter((report) => !input?.status || report.status === input.status)
+      .filter((report) => !input?.type || report.type === input.type)
       .filter((report) => !input?.overdueOnly || overdueHours(report, now) !== null)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map(toReport)
       .filter(
         (report) =>
           !search ||
-          [report.type, report.reporter.fullName, report.reportedUser.fullName].some((value) =>
+          [report.description, report.reporter.fullName, report.reportedUser.fullName].some((value) =>
             normalize(value).includes(search),
           ),
       );

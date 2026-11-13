@@ -801,15 +801,24 @@ export const RESOLVE_SOS_EVENT: TypedDocumentNode<
   ${SOS_FIELDS}
 `;
 
-/** Số việc an toàn đang chờ, cho huy hiệu trên thanh điều hướng. */
-export const SAFETY_COUNTS: TypedDocumentNode<{
+/**
+ * Số việc an toàn đang chờ, cho huy hiệu trên thanh điều hướng. Hai câu truy vấn
+ * tách riêng vì báo cáo đã có API backend còn SOS vẫn chạy trên dữ liệu mẫu.
+ */
+export const OPEN_REPORT_COUNT: TypedDocumentNode<{
   openReports: { total: number };
-  unresolvedSos: { total: number };
 }> = gql`
-  query SafetyCounts {
+  query OpenReportCount {
     openReports: adminReports(input: { status: OPEN, pageSize: 1 }) {
       total
     }
+  }
+`;
+
+export const UNRESOLVED_SOS_COUNT: TypedDocumentNode<{
+  unresolvedSos: { total: number };
+}> = gql`
+  query UnresolvedSosCount {
     unresolvedSos: adminSosEvents(input: { resolved: false, pageSize: 1 }) {
       total
     }

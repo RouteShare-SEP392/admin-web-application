@@ -25,7 +25,12 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { ME, PENDING_COUNTS, SAFETY_COUNTS } from "@/lib/graphql";
+import {
+  ME,
+  OPEN_REPORT_COUNT,
+  PENDING_COUNTS,
+  UNRESOLVED_SOS_COUNT,
+} from "@/lib/graphql";
 import { cn } from "@/lib/utils";
 import { Avatar } from "./ui/misc";
 
@@ -95,13 +100,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: pending } = useQuery(PENDING_COUNTS);
 
   // Làm mới định kỳ để sự cố SOS mới hiện huy hiệu dù quản trị viên đang ở trang khác.
-  const { data: safety } = useQuery(SAFETY_COUNTS, { pollInterval: 30_000 });
+  const { data: reportCount } = useQuery(OPEN_REPORT_COUNT, { pollInterval: 30_000 });
+  const { data: sosCount } = useQuery(UNRESOLVED_SOS_COUNT, { pollInterval: 30_000 });
 
   const counts = {
     drivers: pending?.adminPendingDriverVerifications.length ?? 0,
     vehicles: pending?.adminPendingVehicleVerifications.length ?? 0,
-    reports: safety?.openReports.total ?? 0,
-    sos: safety?.unresolvedSos.total ?? 0,
+    reports: reportCount?.openReports.total ?? 0,
+    sos: sosCount?.unresolvedSos.total ?? 0,
   };
   const admin = meData?.me;
 

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/misc";
 import { Pagination } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
-import { RESOLVE_SOS_EVENT, SAFETY_COUNTS, SOS_EVENTS } from "@/lib/graphql";
+import { RESOLVE_SOS_EVENT, SOS_EVENTS, UNRESOLVED_SOS_COUNT } from "@/lib/graphql";
 import type { SosEvent } from "@/lib/types";
 import { useUrlState } from "@/lib/use-url-state";
 import { cn, errorMessage, formatDateTime } from "@/lib/utils";
@@ -49,7 +49,7 @@ export function SosView() {
     pollInterval: REFRESH_MS,
   });
   const [resolve, { loading: resolving }] = useMutation(RESOLVE_SOS_EVENT, {
-    refetchQueries: [SOS_EVENTS, SAFETY_COUNTS],
+    refetchQueries: [SOS_EVENTS, UNRESOLVED_SOS_COUNT],
   });
   const result = (data ?? previousData)?.adminSosEvents;
   const target = result?.items.find((event) => event.id === targetId) ?? null;

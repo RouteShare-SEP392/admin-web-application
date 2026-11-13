@@ -18,8 +18,8 @@ import {
   TableSkeleton,
 } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
-import { REPORT_DETAIL, SAFETY_COUNTS, UPDATE_REPORT_STATUS } from "@/lib/graphql";
-import { REPORT_STATUS, USER_STATUS } from "@/lib/labels";
+import { OPEN_REPORT_COUNT, REPORT_DETAIL, UPDATE_REPORT_STATUS } from "@/lib/graphql";
+import { REPORT_STATUS, REPORT_TYPE, USER_STATUS } from "@/lib/labels";
 import { overdueHours } from "@/lib/report-rules";
 import type { ReportStatus } from "@/lib/types";
 import { errorMessage, formatDateTime } from "@/lib/utils";
@@ -44,7 +44,7 @@ export function ReportDetailView() {
   const { id } = useParams<{ id: string }>();
   const { data, loading, error, refetch } = useQuery(REPORT_DETAIL, { variables: { id } });
   const [updateStatus, { loading: updating }] = useMutation(UPDATE_REPORT_STATUS, {
-    refetchQueries: [SAFETY_COUNTS],
+    refetchQueries: [OPEN_REPORT_COUNT],
   });
   const notify = useToast();
   const [closing, setClosing] = useState<Closing | null>(null);
@@ -120,7 +120,7 @@ export function ReportDetailView() {
             <StatusBadge meta={REPORT_STATUS[report.status]} />
             {waited !== null ? <Badge tone="bad">Quá hạn</Badge> : null}
           </div>
-          <h1 className="text-xl font-semibold">{report.type}</h1>
+          <h1 className="text-xl font-semibold">{REPORT_TYPE[report.type]}</h1>
           <p className="mt-1 text-sm text-muted">
             Gửi lúc {formatDateTime(report.createdAt)}
             {waited !== null ? ` · đã chờ ${waited} giờ chưa ai nhận` : ""}

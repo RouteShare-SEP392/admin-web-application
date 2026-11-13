@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/misc";
 import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
 import { REPORTS } from "@/lib/graphql";
-import { REPORT_STATUS } from "@/lib/labels";
+import { REPORT_STATUS, REPORT_TYPE } from "@/lib/labels";
 import { overdueHours, REPORT_OVERDUE_HOURS } from "@/lib/report-rules";
 import type { Report, ReportStatus } from "@/lib/types";
 import { useUrlSearchText, useUrlState } from "@/lib/use-url-state";
@@ -130,7 +130,7 @@ export function ReportsView() {
                         href={`/reports/${report.id}`}
                         className="font-medium hover:text-brand-700 hover:underline"
                       >
-                        {report.type}
+                        {REPORT_TYPE[report.type]}
                       </Link>
                       <p className="line-clamp-2 text-xs text-muted">{report.description}</p>
                     </Td>

@@ -5,6 +5,7 @@ import type {
   PaymentMethod,
   PaymentStatus,
   ReportStatus,
+  ReportType,
   SettlementStatus,
   DriverProfile,
   DriverVerification,
@@ -90,7 +91,7 @@ export interface MockReport {
   reporterId: string;
   reportedUserId: string;
   tripId: string | null;
-  type: string;
+  type: ReportType;
   description: string;
   status: ReportStatus;
   resolutionNote: string | null;
@@ -793,19 +794,19 @@ function createStore(): MockStore {
   }
 
   // ----- Báo cáo của người dùng -----
-  const REPORT_PLAN: [ReportStatus, number, string, string, boolean][] = [
-    ["OPEN", 2, "Lái xe không an toàn", "Tài xế vượt ẩu và dùng điện thoại khi đang chạy trên cao tốc.", false],
-    ["OPEN", 5, "Đến trễ", "Tài xế đến điểm đón trễ hơn 30 phút và không báo trước.", false],
-    ["OPEN", 9, "Thái độ không phù hợp", "Hành khách to tiếng và đòi dừng xe ngoài điểm đã hẹn.", true],
-    ["OPEN", 30, "Yêu cầu trả thêm tiền", "Tài xế yêu cầu trả thêm tiền mặt ngoài số tiền trên ứng dụng.", false],
-    ["OPEN", 50, "Không đến điểm đón", "Tôi chờ ở điểm đón 40 phút nhưng tài xế không tới và không nghe máy.", false],
-    ["UNDER_REVIEW", 28, "Lái xe không an toàn", "Xe chạy quá tốc độ suốt chặng, tôi đã nhắc nhưng tài xế không giảm.", false],
-    ["UNDER_REVIEW", 40, "Huỷ sát giờ", "Hành khách huỷ khi tôi đã tới điểm đón.", true],
-    ["RESOLVED", 96, "Yêu cầu trả thêm tiền", "Tài xế thu thêm 50.000đ tiền gửi xe.", false],
-    ["RESOLVED", 150, "Thái độ không phù hợp", "Tài xế nói chuyện thiếu tôn trọng với hành khách nữ.", false],
-    ["RESOLVED", 220, "Đến trễ", "Tài xế tới trễ 20 phút.", false],
-    ["REJECTED", 130, "Xe không đúng mô tả", "Xe tới đón khác màu so với thông tin trên ứng dụng.", false],
-    ["REJECTED", 300, "Thái độ không phù hợp", "Hành khách không chào hỏi.", true],
+  const REPORT_PLAN: [ReportStatus, number, ReportType, string, boolean][] = [
+    ["OPEN", 2, "UNSAFE_DRIVING", "Tài xế vượt ẩu và dùng điện thoại khi đang chạy trên cao tốc.", false],
+    ["OPEN", 5, "LATE_ARRIVAL", "Tài xế đến điểm đón trễ hơn 30 phút và không báo trước.", false],
+    ["OPEN", 9, "RUDE_BEHAVIOR", "Hành khách to tiếng và đòi dừng xe ngoài điểm đã hẹn.", true],
+    ["OPEN", 30, "FARE_DISPUTE", "Tài xế yêu cầu trả thêm tiền mặt ngoài số tiền trên ứng dụng.", false],
+    ["OPEN", 50, "NO_SHOW", "Tôi chờ ở điểm đón 40 phút nhưng tài xế không tới và không nghe máy.", false],
+    ["UNDER_REVIEW", 28, "UNSAFE_DRIVING", "Xe chạy quá tốc độ suốt chặng, tôi đã nhắc nhưng tài xế không giảm.", false],
+    ["UNDER_REVIEW", 40, "LATE_CANCELLATION", "Hành khách huỷ khi tôi đã tới điểm đón.", true],
+    ["RESOLVED", 96, "FARE_DISPUTE", "Tài xế thu thêm 50.000đ tiền gửi xe.", false],
+    ["RESOLVED", 150, "RUDE_BEHAVIOR", "Tài xế nói chuyện thiếu tôn trọng với hành khách nữ.", false],
+    ["RESOLVED", 220, "LATE_ARRIVAL", "Tài xế tới trễ 20 phút.", false],
+    ["REJECTED", 130, "WRONG_VEHICLE", "Xe tới đón khác màu so với thông tin trên ứng dụng.", false],
+    ["REJECTED", 300, "RUDE_BEHAVIOR", "Hành khách không chào hỏi.", true],
   ];
   const reportable = bookings.filter((b) => b.status === "COMPLETED").slice(-80);
   const reports: MockReport[] = REPORT_PLAN.map(

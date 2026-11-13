@@ -452,6 +452,10 @@ export const PROPOSED_SDL = /* GraphQL */ `
   enum PaymentStatus { PENDING PAID PARTIALLY_REFUNDED REFUNDED FAILED CANCELLED }
   enum SettlementStatus { PENDING PROCESSING SETTLED FAILED CANCELLED }
   enum ReportStatus { OPEN UNDER_REVIEW RESOLVED REJECTED }
+  enum ReportType {
+    UNSAFE_DRIVING HARASSMENT RUDE_BEHAVIOR LATE_ARRIVAL NO_SHOW
+    LATE_CANCELLATION FARE_DISPUTE WRONG_VEHICLE OTHER
+  }
 
   """
   Một đặt chỗ nhìn từ phía quản trị. Tên trường bám theo bảng bookings trong
@@ -552,7 +556,7 @@ export const PROPOSED_SDL = /* GraphQL */ `
   """Bảng reports. resolutionNote chưa có trong DBML, cần thêm cột."""
   type AdminReport {
     id: ID!
-    type: String!
+    type: ReportType!
     description: String!
     status: ReportStatus!
     resolutionNote: String
@@ -565,9 +569,10 @@ export const PROPOSED_SDL = /* GraphQL */ `
   }
 
   input AdminReportsInput {
-    """Tìm theo loại báo cáo, họ tên người báo cáo hoặc người bị báo cáo"""
+    """Tìm theo họ tên người báo cáo, người bị báo cáo hoặc nội dung"""
     search: String
     status: ReportStatus
+    type: ReportType
     """Chỉ báo cáo OPEN gửi quá 24 giờ, cùng mốc với overdueReports của Tổng quan"""
     overdueOnly: Boolean
     page: Int = 1
@@ -836,23 +841,19 @@ export const PROPOSED_SDL = /* GraphQL */ `
  * Các root field backend CHƯA có: được lớp mock xử lý khi NEXT_PUBLIC_API_MOCK=missing.
  * Khi backend làm xong một API, xoá tên nó khỏi danh sách này để web gọi API thật.
  * Đã chuyển sang API thật (backend nhánh feat/admin-users-verifications): người dùng,
- * quản trị viên, đổi mật khẩu, lịch sử xét duyệt, hồ sơ tài xế, phương tiện, cấu hình.
+ * quản trị viên, đổi mật khẩu, lịch sử xét duyệt, hồ sơ tài xế, phương tiện, cấu hình,
+ * vi phạm, báo cáo.
  */
 export const PROPOSED_ROOT_FIELDS = new Set([
   "adminOperationsOverview",
   "adminBookings",
   "adminBooking",
   "adminPayments",
-  "adminReports",
-  "adminReport",
   "adminSosEvents",
-  "adminUpdateReportStatus",
   "adminResolveSosEvent",
-  // Chuyến đi và vi phạm: backend làm ở phần tiếp theo.
+  // Chuyến đi: backend làm ở phần tiếp theo.
   "adminTrips",
   "adminTrip",
   "adminCancelTrip",
-  "adminDriverViolations",
-  "adminForgiveViolation",
   "adminAuditLogs",
 ]);

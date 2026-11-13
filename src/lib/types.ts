@@ -214,6 +214,16 @@ export type PaymentStatus =
   | "CANCELLED";
 export type SettlementStatus = "PENDING" | "PROCESSING" | "SETTLED" | "FAILED" | "CANCELLED";
 export type ReportStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+export type ReportType =
+  | "UNSAFE_DRIVING"
+  | "HARASSMENT"
+  | "RUDE_BEHAVIOR"
+  | "LATE_ARRIVAL"
+  | "NO_SHOW"
+  | "LATE_CANCELLATION"
+  | "FARE_DISPUTE"
+  | "WRONG_VEHICLE"
+  | "OTHER";
 
 /**
  * Một đặt chỗ nhìn từ phía quản trị. Tên trường bám theo bảng bookings trong
@@ -273,7 +283,7 @@ export interface PaymentSummary {
 /** Báo cáo của người dùng về một người dùng khác (bảng reports). */
 export interface Report {
   id: string;
-  type: string;
+  type: ReportType;
   description: string;
   status: ReportStatus;
   /** Ghi chú xử lý của quản trị viên (trường đề xuất, DBML chưa có). */
