@@ -11,7 +11,7 @@ import type {
   DriverViolation,
   LuggageCapacity,
   PenaltyAction,
-  SystemSetting,
+  AppSettings,
   Trip,
   TripBookingMilestone,
   TripStatus,
@@ -34,7 +34,7 @@ export interface MockStore {
   vehicleVerifications: VehicleVerification[];
   trips: Trip[];
   violations: DriverViolation[];
-  settings: SystemSetting[];
+  settings: AppSettings;
   bookings: MockBooking[];
   auditLogs: AuditLog[];
   /** Mật khẩu của các tài khoản quản trị mẫu, theo id người dùng. */
@@ -872,24 +872,32 @@ function createStore(): MockStore {
     };
   });
 
-  const settingRows: [string, string, string][] = [
-    ["PLATFORM_FEE_PERCENT", "10", "Phí nền tảng tính trên giá gốc, trừ vào phần của tài xế"],
-    ["MIN_COST_PER_KM", "800", "Giá sàn chia sẻ chi phí cho mỗi km, mỗi ghế"],
-    ["MAX_COST_PER_KM", "2500", "Giá trần phi thương mại cho mỗi km, mỗi ghế"],
-    ["SEARCH_RADIUS_METERS", "3000", "Bán kính tìm điểm đón và điểm trả quanh vị trí hành khách"],
-    ["MIN_DEPARTURE_LEAD_MINUTES", "15", "Chuyến phải khởi hành sau thời điểm tạo ít nhất chừng này phút"],
-    ["BOOKING_EXPIRY_MINUTES", "30", "Yêu cầu đặt chỗ tự hết hạn nếu tài xế không phản hồi"],
-    ["NO_SHOW_STRIKE_LIMIT", "3", "Số lần bỏ chuyến trước khi thu hồi quyền tài xế"],
-  ];
-  const settings: SystemSetting[] = settingRows.map(
-    ([settingKey, settingValue, description], i) => ({
-      id: mockId("s0000000", i + 1),
-      settingKey,
-      settingValue,
-      description,
-      updatedAt: iso(now - 30 * DAY),
-    }),
-  );
+  // Giá trị mặc định của backend (Backend/src/modules/settings/settings.registry.ts).
+  const settings: AppSettings = {
+    platformFeePercent: 10,
+    minCostPerKm: 800,
+    maxCostPerKm: 2500,
+    repeatPassengerDiscountMaxPercent: 30,
+    defaultSearchRadiusMeters: 5000,
+    maxSearchRadiusMeters: 5000,
+    minDepartureLeadMinutes: 15,
+    tripEditCutoffMinutes: 30,
+    tripScheduleChangeToleranceMinutes: 30,
+    maxWaypointDistanceMeters: 1000,
+    maxStopWaitMinutes: 30,
+    recurringPassengerPriorityMinutes: 360,
+    recurringDriverCheckLocalTime: "18:00",
+    recurringDriverReminderLeadMinutes: 2880,
+    activeUploadSeconds: 5,
+    activeStationarySeconds: 15,
+    activeViewerPollSeconds: 5,
+    activeGpsMaxAgeSeconds: 30,
+    activeGpsFutureSkewSeconds: 5,
+    activeGpsAccuracyMeters: 50,
+    activeProximityMeters: 150,
+    activeOffRouteMeters: 100,
+    activePassedPickupMeters: 100,
+  };
 
   return {
     users,

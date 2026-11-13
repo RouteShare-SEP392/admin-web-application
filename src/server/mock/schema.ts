@@ -189,13 +189,66 @@ export const EXISTING_SDL = /* GraphQL */ `
     rejectionReason: String
   }
 
+  type AppSettings {
+    platformFeePercent: Float!
+    minCostPerKm: Float!
+    maxCostPerKm: Float!
+    repeatPassengerDiscountMaxPercent: Int!
+    defaultSearchRadiusMeters: Int!
+    maxSearchRadiusMeters: Int!
+    minDepartureLeadMinutes: Int!
+    tripEditCutoffMinutes: Int!
+    tripScheduleChangeToleranceMinutes: Int!
+    maxWaypointDistanceMeters: Int!
+    maxStopWaitMinutes: Int!
+    recurringPassengerPriorityMinutes: Int!
+    recurringDriverCheckLocalTime: String!
+    recurringDriverReminderLeadMinutes: Int!
+    activeUploadSeconds: Int!
+    activeStationarySeconds: Int!
+    activeViewerPollSeconds: Int!
+    activeGpsMaxAgeSeconds: Int!
+    activeGpsFutureSkewSeconds: Int!
+    activeGpsAccuracyMeters: Int!
+    activeProximityMeters: Int!
+    activeOffRouteMeters: Int!
+    activePassedPickupMeters: Int!
+  }
+
+  input UpdateSystemSettingsInput {
+    platformFeePercent: Float
+    minCostPerKm: Float
+    maxCostPerKm: Float
+    repeatPassengerDiscountMaxPercent: Int
+    defaultSearchRadiusMeters: Int
+    minDepartureLeadMinutes: Int
+    tripEditCutoffMinutes: Int
+    tripScheduleChangeToleranceMinutes: Int
+    maxWaypointDistanceMeters: Int
+    maxStopWaitMinutes: Int
+    recurringPassengerPriorityMinutes: Int
+    recurringDriverCheckLocalTime: String
+    recurringDriverReminderLeadMinutes: Int
+    activeUploadSeconds: Int
+    activeStationarySeconds: Int
+    activeViewerPollSeconds: Int
+    activeGpsMaxAgeSeconds: Int
+    activeGpsFutureSkewSeconds: Int
+    activeGpsAccuracyMeters: Int
+    activeProximityMeters: Int
+    activeOffRouteMeters: Int
+    activePassedPickupMeters: Int
+  }
+
   type Query {
     me: User!
+    adminSystemSettings: AppSettings!
     adminPendingDriverVerifications: [DriverVerification!]!
     adminPendingVehicleVerifications: [VehicleVerification!]!
   }
 
   type Mutation {
+    updateSystemSettings(input: UpdateSystemSettingsInput!): AppSettings!
     adminReviewDriverVerification(input: AdminReviewDriverVerificationInput!): DriverVerification!
     adminReviewVehicleVerification(input: AdminReviewVehicleVerificationInput!): VehicleVerification!
   }
@@ -235,15 +288,6 @@ export const PROPOSED_SDL = /* GraphQL */ `
     createdAt: DateTime!
     driver: User!
     trip: Trip
-  }
-
-  """Bảng system_settings trong DBML, backend chưa có entity."""
-  type SystemSetting {
-    id: ID!
-    settingKey: String!
-    settingValue: String!
-    description: String
-    updatedAt: DateTime!
   }
 
   # Bốn trường tóm tắt thêm vào type Trip cho bảng "Chuyến gần đây".
@@ -738,11 +782,6 @@ export const PROPOSED_SDL = /* GraphQL */ `
     newPassword: String!
   }
 
-  input AdminUpdateSystemSettingInput {
-    settingKey: String!
-    settingValue: String!
-  }
-
   extend type Query {
     """rangeDays nhận 7, 14 hoặc 30"""
     adminOperationsOverview(rangeDays: Int! = 14): AdminOperationsOverview!
@@ -767,7 +806,6 @@ export const PROPOSED_SDL = /* GraphQL */ `
     adminTrips(input: AdminTripsInput): AdminTripPage!
     adminTrip(id: ID!): Trip!
     adminDriverViolations(input: AdminDriverViolationsInput): AdminDriverViolationPage!
-    adminSystemSettings: [SystemSetting!]!
     """Mới nhất trước"""
     adminAuditLogs(input: AdminAuditLogsInput): AdminAuditLogPage!
   }
@@ -782,7 +820,6 @@ export const PROPOSED_SDL = /* GraphQL */ `
     """Chỉ áp dụng cho chuyến PUBLISHED (theo state machine của chuyến đi)."""
     adminCancelTrip(input: AdminCancelTripInput!): Trip!
     adminForgiveViolation(input: AdminForgiveViolationInput!): DriverViolation!
-    adminUpdateSystemSetting(input: AdminUpdateSystemSettingInput!): SystemSetting!
     """
     Đổi mật khẩu của người đang đăng nhập (mọi vai trò). Backend hiện chỉ có
     luồng đặt lại mật khẩu qua OTP email.
@@ -798,8 +835,8 @@ export const PROPOSED_SDL = /* GraphQL */ `
 /**
  * Các root field backend CHƯA có: được lớp mock xử lý khi NEXT_PUBLIC_API_MOCK=missing.
  * Khi backend làm xong một API, xoá tên nó khỏi danh sách này để web gọi API thật.
- * Đã chuyển sang API thật (backend nhánh feat/admin-apis): người dùng, chuyến đi,
- * lịch sử xét duyệt, hồ sơ tài xế, phương tiện, vi phạm, quản trị viên, đổi mật khẩu.
+ * Đã chuyển sang API thật (backend nhánh feat/admin-users-verifications): người dùng,
+ * quản trị viên, đổi mật khẩu, lịch sử xét duyệt, hồ sơ tài xế, phương tiện, cấu hình.
  */
 export const PROPOSED_ROOT_FIELDS = new Set([
   "adminOperationsOverview",
@@ -811,7 +848,11 @@ export const PROPOSED_ROOT_FIELDS = new Set([
   "adminSosEvents",
   "adminUpdateReportStatus",
   "adminResolveSosEvent",
-  "adminSystemSettings",
-  "adminUpdateSystemSetting",
+  // Chuyến đi và vi phạm: backend làm ở phần tiếp theo.
+  "adminTrips",
+  "adminTrip",
+  "adminCancelTrip",
+  "adminDriverViolations",
+  "adminForgiveViolation",
   "adminAuditLogs",
 ]);

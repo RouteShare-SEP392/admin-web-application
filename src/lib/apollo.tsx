@@ -18,7 +18,10 @@ const fetchWithSessionCheck: typeof fetch = async (input, init) => {
 function createClient() {
   return new ApolloClient({
     link: new HttpLink({ uri: "/api/graphql", fetch: fetchWithSessionCheck }),
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+      // AppSettings không có id: gộp các trường do nhiều thẻ cấu hình truy vấn riêng.
+      typePolicies: { AppSettings: { merge: true } },
+    }),
     defaultOptions: {
       watchQuery: { fetchPolicy: "cache-and-network" },
     },

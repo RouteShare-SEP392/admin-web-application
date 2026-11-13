@@ -16,7 +16,7 @@ import type {
   Report,
   ReportStatus,
   SosEvent,
-  SystemSetting,
+  AppSettings,
   Trip,
   TripStatus,
   User,
@@ -1177,33 +1177,55 @@ export const FORGIVE_VIOLATION: TypedDocumentNode<
   }
 `;
 
-export const SYSTEM_SETTINGS: TypedDocumentNode<{
-  adminSystemSettings: SystemSetting[];
-}> = gql`
-  query AdminSystemSettings {
-    adminSystemSettings {
-      id
-      settingKey
-      settingValue
-      description
-      updatedAt
-    }
+const APP_SETTINGS_FIELDS = gql`
+  fragment AppSettingsFields on AppSettings {
+    platformFeePercent
+    minCostPerKm
+    maxCostPerKm
+    repeatPassengerDiscountMaxPercent
+    defaultSearchRadiusMeters
+    maxSearchRadiusMeters
+    minDepartureLeadMinutes
+    tripEditCutoffMinutes
+    tripScheduleChangeToleranceMinutes
+    maxWaypointDistanceMeters
+    maxStopWaitMinutes
+    recurringPassengerPriorityMinutes
+    recurringDriverCheckLocalTime
+    recurringDriverReminderLeadMinutes
+    activeUploadSeconds
+    activeStationarySeconds
+    activeViewerPollSeconds
+    activeGpsMaxAgeSeconds
+    activeGpsFutureSkewSeconds
+    activeGpsAccuracyMeters
+    activeProximityMeters
+    activeOffRouteMeters
+    activePassedPickupMeters
   }
 `;
 
-export const UPDATE_SYSTEM_SETTING: TypedDocumentNode<
-  { adminUpdateSystemSetting: SystemSetting },
-  { input: { settingKey: string; settingValue: string } }
-> = gql`
-  mutation UpdateSystemSetting($input: AdminUpdateSystemSettingInput!) {
-    adminUpdateSystemSetting(input: $input) {
-      id
-      settingKey
-      settingValue
-      description
-      updatedAt
+export const SYSTEM_SETTINGS: TypedDocumentNode<{
+  adminSystemSettings: AppSettings;
+}> = gql`
+  query AdminSystemSettings {
+    adminSystemSettings {
+      ...AppSettingsFields
     }
   }
+  ${APP_SETTINGS_FIELDS}
+`;
+
+export const UPDATE_SYSTEM_SETTINGS: TypedDocumentNode<
+  { updateSystemSettings: AppSettings },
+  { input: Partial<Omit<AppSettings, "maxSearchRadiusMeters">> }
+> = gql`
+  mutation UpdateSystemSettings($input: UpdateSystemSettingsInput!) {
+    updateSystemSettings(input: $input) {
+      ...AppSettingsFields
+    }
+  }
+  ${APP_SETTINGS_FIELDS}
 `;
 
 export const AUDIT_LOGS: TypedDocumentNode<

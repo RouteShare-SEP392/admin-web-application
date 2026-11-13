@@ -1,5 +1,6 @@
 import { GraphQLError } from "graphql";
 import type {
+  AppSettings,
   AuditAction,
   DriverProfile,
   Trip,
@@ -12,6 +13,31 @@ import type {
 import { recordAudit } from "./audit";
 import { buildOperationsOverview, startOfVnDay } from "./overview";
 import { getStore } from "./store";
+
+/** Phạm vi [min, max] giống settings.registry.ts của backend. */
+const SETTING_RANGES = {
+  platformFeePercent: [0, 100],
+  minCostPerKm: [0.01, Number.MAX_SAFE_INTEGER],
+  maxCostPerKm: [0.01, Number.MAX_SAFE_INTEGER],
+  repeatPassengerDiscountMaxPercent: [5, 100],
+  defaultSearchRadiusMeters: [500, 5000],
+  minDepartureLeadMinutes: [1, 1440],
+  tripEditCutoffMinutes: [0, 2147483647],
+  tripScheduleChangeToleranceMinutes: [0, 2147483647],
+  maxWaypointDistanceMeters: [100, 5000],
+  maxStopWaitMinutes: [1, 1440],
+  recurringPassengerPriorityMinutes: [1, 2147483647],
+  recurringDriverReminderLeadMinutes: [1, 10080],
+  activeUploadSeconds: [5, 60],
+  activeStationarySeconds: [5, 60],
+  activeViewerPollSeconds: [5, 60],
+  activeGpsMaxAgeSeconds: [10, 120],
+  activeGpsFutureSkewSeconds: [1, 10],
+  activeGpsAccuracyMeters: [5, 100],
+  activeProximityMeters: [50, 500],
+  activeOffRouteMeters: [50, 500],
+  activePassedPickupMeters: [50, 500],
+} as const;
 
 export interface MockContext {
   adminId: string;
@@ -464,38 +490,44 @@ export const rootValue = {
     return getStore().settings;
   },
 
-  adminUpdateSystemSetting(
-    { input }: { input: { settingKey: string; settingValue: string } },
+  updateSystemSettings(
+    { input }: { input: Partial<Omit<AppSettings, "maxSearchRadiusMeters">> },
     ctx: MockContext,
   ) {
     const store = getStore();
-    const setting = store.settings.find((s) => s.settingKey === input.settingKey);
-    if (!setting) fail("Không tìm thấy cấu hình.", "NOT_FOUND");
-    const value = Number(input.settingValue);
-    if (input.settingValue.trim() === "" || !Number.isFinite(value) || value < 0) {
-      fail("Giá trị phải là số không âm.");
+    const next: AppSettings = { ...store.settings };
+    for (const [key, value] of Object.entries(input)) {
+      if (value === null || value === undefined) continue;
+      if (key === "recurringDriverCheckLocalTime") {
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(value))) {
+          fail("Nhập giờ theo định dạng HH:mm.");
+        }
+      } else {
+        const range = SETTING_RANGES[key as keyof typeof SETTING_RANGES];
+        const number = Number(value);
+        if (!range || !Number.isFinite(number) || number < range[0] || number > range[1]) {
+          fail("Giá trị cấu hình nằm ngoài phạm vi cho phép.");
+        }
+      }
+      (next as unknown as Record<string, unknown>)[key] = value;
     }
-    const current = (key: string) =>
-      Number(store.settings.find((s) => s.settingKey === key)?.settingValue);
-    if (input.settingKey === "PLATFORM_FEE_PERCENT" && value > 100) {
-      fail("Phí nền tảng không được vượt quá 100%.");
-    }
-    if (input.settingKey === "MIN_COST_PER_KM" && value > current("MAX_COST_PER_KM")) {
+    if (next.minCostPerKm > next.maxCostPerKm) {
       fail("Giá sàn không được lớn hơn giá trần.");
     }
-    if (input.settingKey === "MAX_COST_PER_KM" && value < current("MIN_COST_PER_KM")) {
-      fail("Giá trần không được nhỏ hơn giá sàn.");
-    }
-    const previous = setting.settingValue;
-    setting.settingValue = String(value);
-    setting.updatedAt = new Date().toISOString();
-    recordAudit(
-      ctx.adminId,
-      "SETTING_UPDATED",
-      { type: "SETTING", id: setting.id, label: setting.settingKey },
-      `${previous} → ${setting.settingValue}`,
+    const changed = Object.keys(input).filter(
+      (key) =>
+        store.settings[key as keyof AppSettings] !== next[key as keyof AppSettings],
     );
-    return setting;
+    store.settings = next;
+    if (changed.length > 0) {
+      recordAudit(
+        ctx.adminId,
+        "SETTING_UPDATED",
+        { type: "SETTING", id: "app-settings", label: changed.join(", ") },
+        null,
+      );
+    }
+    return next;
   },
 
   adminAuditLogs({

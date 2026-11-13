@@ -323,13 +323,38 @@ export interface DriverViolation {
   trip: Trip | null;
 }
 
-export interface SystemSetting {
-  id: string;
-  settingKey: string;
-  settingValue: string;
-  description: string | null;
-  updatedAt: string;
+/** Cấu hình hệ thống có kiểu (type AppSettings của backend). */
+export interface AppSettings {
+  platformFeePercent: number;
+  minCostPerKm: number;
+  maxCostPerKm: number;
+  repeatPassengerDiscountMaxPercent: number;
+  defaultSearchRadiusMeters: number;
+  maxSearchRadiusMeters: number;
+  minDepartureLeadMinutes: number;
+  tripEditCutoffMinutes: number;
+  tripScheduleChangeToleranceMinutes: number;
+  maxWaypointDistanceMeters: number;
+  maxStopWaitMinutes: number;
+  recurringPassengerPriorityMinutes: number;
+  recurringDriverCheckLocalTime: string;
+  recurringDriverReminderLeadMinutes: number;
+  activeUploadSeconds: number;
+  activeStationarySeconds: number;
+  activeViewerPollSeconds: number;
+  activeGpsMaxAgeSeconds: number;
+  activeGpsFutureSkewSeconds: number;
+  activeGpsAccuracyMeters: number;
+  activeProximityMeters: number;
+  activeOffRouteMeters: number;
+  activePassedPickupMeters: number;
 }
+
+/** Các trường số admin chỉnh được qua updateSystemSettings (maxSearchRadiusMeters chỉ đọc). */
+export type NumericSettingKey = Exclude<
+  keyof AppSettings,
+  "recurringDriverCheckLocalTime" | "maxSearchRadiusMeters"
+>;
 
 export interface Page<T> {
   items: T[];
