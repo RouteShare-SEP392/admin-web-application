@@ -1,0 +1,18 @@
+services:
+  admin:
+    image: ${ADMIN_IMAGE:?Set the published Admin image digest}
+    environment:
+      BACKEND_GRAPHQL_URL: http://api:3000/graphql
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/login', { redirect: 'manual' }).then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+networks:
+  backend:
+    external: true
+    name: routeshare_default
