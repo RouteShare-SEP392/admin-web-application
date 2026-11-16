@@ -22,3 +22,12 @@ flowchart LR
 The host reads Compose from `/etc/routeshare/admin/compose.yml`. Install reviewed changes to Compose or the deploy script on EC2 when those files change. The shared Nginx proxy serves Admin over HTTPS, and the Next.js server calls Backend GraphQL over the Docker network.
 
 See the [GitHub Actions workflow](../.github/workflows/ci.yml), [Compose configuration](compose.yml) and [deploy script](deploy.sh).
+# Public map configuration
+
+Set repository Actions variable `NEXT_PUBLIC_GOONG_MAPTILES_KEY` to the public
+Goong Map Tiles key before building. Both PR validation and published images pass
+it as a Docker build argument because Next.js inlines public configuration at
+build time. This value is intentionally browser-visible; never use the Backend
+`GOONG_API_KEY` (Places/Direction). Restrict the tiles key to approved web origins
+in the Goong console. Changing it requires rebuilding the image, not just
+restarting the container.
