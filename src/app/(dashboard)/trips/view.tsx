@@ -35,9 +35,9 @@ const STATUS_OPTIONS: TripStatus[] = [
   "DRAFT",
 ];
 
-export function TripsView() {
+export function TripsView({ history = false }: { history?: boolean }) {
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<TripStatus | "">("");
+  const [status, setStatus] = useState<TripStatus | "">(history ? "COMPLETED" : "");
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search.trim());
 
@@ -62,10 +62,14 @@ export function TripsView() {
         Lịch định kỳ & thay đổi chuyến →
       </Link>
       <PageHeader
-        title="Chuyến đi"
-        description="Giám sát các chuyến tài xế đã đăng. Quản trị viên chỉ xem và huỷ chuyến vi phạm, không tạo hay sửa chuyến."
+        title={history ? "Lịch sử hành trình" : "Chuyến đi"}
+        description={history ? "Tra cứu chuyến đã hoàn thành, hủy hoặc hết hạn." : "Tra cứu chuyến đi, tài xế và lịch trình đã đăng."}
         mocked={isProposedApiMocked()}
       />
+
+      {history ? <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Lọc lịch sử hành trình">
+        {(["COMPLETED", "CANCELLED", "EXPIRED"] as const).map((value) => <button key={value} type="button" aria-pressed={status === value} className={buttonClass(status === value ? "primary" : "secondary")} onClick={() => { setStatus(value); setPage(1); }}>{TRIP_STATUS[value].label}</button>)}
+      </div> : null}
 
       <Card>
         <div className="flex flex-wrap items-center gap-3 border-b border-line p-4">
@@ -86,7 +90,7 @@ export function TripsView() {
               }}
             />
           </div>
-          <Select
+          {!history ? <Select
             aria-label="Trạng thái chuyến"
             value={status}
             onChange={(event) => {
@@ -100,7 +104,7 @@ export function TripsView() {
                 {TRIP_STATUS[option].label}
               </option>
             ))}
-          </Select>
+          </Select> : null}
         </div>
 
         {!result && loading ? (
@@ -120,8 +124,8 @@ export function TripsView() {
                   <Th className="px-2.5 first:pl-4">Lộ trình</Th>
                   <Th className="px-2.5">Tài xế</Th>
                   <Th className="px-2.5">Khởi hành</Th>
-                  <Th className="px-2.5 text-center whitespace-nowrap">Ghế trống</Th>
-                  <Th className="px-2.5 text-right whitespace-nowrap">Giá mỗi km</Th>
+                   <Th className="px-2.5 text-center whitespace-nowrap">Ghế đã đăng</Th>
+                   <Th className="px-2.5 text-right whitespace-nowrap">Mức chia sẻ/km</Th>
                   <Th className="px-2.5 text-center whitespace-nowrap">Trạng thái</Th>
                   <Th className="px-2.5 text-right whitespace-nowrap last:pr-4">Thao tác</Th>
                 </tr>
@@ -169,7 +173,7 @@ export function TripsView() {
                       })()}
                     </Td>
                     <Td className="px-2.5 text-center whitespace-nowrap tabular-nums">
-                      {trip.availableSeats}/{trip.totalSeatsOffered}
+                       {trip.totalSeatsOffered}
                     </Td>
                     <Td className="px-2.5 text-right whitespace-nowrap tabular-nums">
                       {trip.pricing

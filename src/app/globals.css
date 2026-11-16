@@ -26,8 +26,84 @@
 }
 
 body {
-  background: var(--color-canvas);
+  background: radial-gradient(ellipse at 95% 0%, #eaf4ee 0%, transparent 45%), var(--color-canvas);
   color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.rs-card {
+  box-shadow: 0 2px 4px rgb(20 61 46 / 0.025), 0 8px 24px rgb(20 61 46 / 0.025);
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.rs-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #6f9987 #143d2e;
+  overscroll-behavior: contain;
+}
+
+.rs-map-marker {
+  width: 28px;
+  height: 28px;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #1f5c45;
+  box-shadow: 0 2px 8px #0004;
+  cursor: pointer;
+}
+.rs-map-marker-destination { background: #dc2626; border-radius: 50% 50% 50% 0; }
+.rs-map-marker-intermediate_stop { background: #fbbf24; color: #422006; font-size: 12px; font-weight: 700; }
+
+.rs-page-enter { animation: rs-enter 360ms ease-out both; }
+.rs-page-heading { animation: rs-enter 400ms ease-out both; }
+.rs-stagger > * { animation: rs-enter 500ms ease-out both; }
+.rs-stagger > :nth-child(2) { animation-delay: 60ms; }
+.rs-stagger > :nth-child(3) { animation-delay: 120ms; }
+.rs-stagger > :nth-child(4) { animation-delay: 180ms; }
+
+.rs-hero {
+  background-image: radial-gradient(ellipse at 80% 20%, #437d6680, transparent 65%), linear-gradient(120deg, #143d2e, #194c39);
+  box-shadow: 0 14px 36px rgb(20 61 46 / 0.15);
+}
+
+.rs-route-line {
+  stroke-dasharray: 500;
+  stroke-dashoffset: 0;
+  animation: rs-route-draw 1600ms ease-out both;
+}
+
+.rs-button {
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+.rs-button:active:not(:disabled) { transform: scale(.97); }
+.rs-nav-link { transition: background-color 180ms ease, color 180ms ease, transform 180ms ease; }
+.rs-chart-bar { transform-origin: bottom; animation: rs-grow-y 700ms ease-out both; }
+.rs-status-bar { transform-origin: left; animation: rs-grow-x 700ms ease-out both; }
+.rs-stat-icon { transition: transform 220ms ease, background-color 220ms ease; }
+
+@media (hover: hover) {
+  .rs-card:hover { border-color: var(--color-brand-200); box-shadow: 0 8px 28px rgb(20 61 46 / 0.07); }
+  .rs-stat-tile:hover .rs-stat-icon { transform: rotate(-7deg) scale(1.08); background: var(--color-accent); }
+  .rs-button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 10px rgb(20 61 46 / 0.12); }
+  .rs-nav-link:hover { transform: translateX(2px); }
+}
+
+@keyframes rs-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes rs-route-draw { from { stroke-dashoffset: 500; } to { stroke-dashoffset: 0; } }
+@keyframes rs-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes rs-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-900);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 3px;
 }
 
 /* Hộp thoại dùng thẻ <dialog> gốc của trình duyệt. */
@@ -47,6 +123,15 @@ dialog[open] {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .rs-page-enter, .rs-page-heading, .rs-stagger > *, .rs-route-line, .rs-chart-bar, .rs-status-bar, .animate-pulse {
+    animation: none;
+  }
+  .rs-card, .rs-button, .rs-nav-link, .rs-stat-icon, .rs-task-link svg {
+    transition: none;
+  }
+  .rs-button:hover:not(:disabled), .rs-button:active:not(:disabled), .rs-nav-link:hover, .rs-stat-tile:hover .rs-stat-icon, .rs-task-link:hover svg {
+    transform: none;
+  }
   dialog[open] {
     animation: none;
   }

@@ -2,9 +2,7 @@ import { gql, type TypedDocumentNode } from "@apollo/client";
 import type {
   DashboardStats,
   DriverVerification,
-  DriverViolation,
   Page,
-  SystemSetting,
   Trip,
   TripStatus,
   User,
@@ -12,7 +10,6 @@ import type {
   UserStatus,
   VehicleVerification,
   VerificationStatus,
-  ViolationType,
 } from "./types";
 
 interface PageVars {
@@ -265,32 +262,6 @@ export const USER_DETAIL: TypedDocumentNode<{ adminUser: User }, { id: string }>
   ${USER_DETAIL_FIELDS}
 `;
 
-export const SUSPEND_USER: TypedDocumentNode<
-  { adminSuspendUser: Pick<User, "id" | "status"> },
-  { input: { userId: string; reason: string } }
-> = gql`
-  mutation SuspendUser($input: AdminSuspendUserInput!) {
-    adminSuspendUser(input: $input) {
-      id
-      status
-      updatedAt
-    }
-  }
-`;
-
-export const UNSUSPEND_USER: TypedDocumentNode<
-  { adminUnsuspendUser: Pick<User, "id" | "status"> },
-  { userId: string }
-> = gql`
-  mutation UnsuspendUser($userId: ID!) {
-    adminUnsuspendUser(userId: $userId) {
-      id
-      status
-      updatedAt
-    }
-  }
-`;
-
 export const TRIPS: TypedDocumentNode<
   { adminTrips: Page<Trip> },
   { input: PageVars & { search?: string; status?: TripStatus } }
@@ -385,118 +356,8 @@ export const TRIP_DETAIL: TypedDocumentNode<{ adminTrip: Trip }, { id: string }>
       actualStartedAt
       actualCompletedAt
       originalDepartureTime
-      bookings {
-        id
-        passengerId
-        passengerName
-        passengerPhone
-        seatsBooked
-        pickupLabel
-        plannedPickupTime
-        arrivedAt
-        boardedAt
-        dropoffLabel
-        plannedDropoffTime
-        alightedAt
-        status
-        totalAmount
-      }
     }
   }
 `;
 
-export const CANCEL_TRIP: TypedDocumentNode<
-  { adminCancelTrip: Pick<Trip, "id" | "status"> },
-  { input: { tripId: string; reason: string } }
-> = gql`
-  mutation CancelTrip($input: AdminCancelTripInput!) {
-    adminCancelTrip(input: $input) {
-      id
-      status
-      cancellationReason
-      cancelledBy
-      availableSeats
-    }
-  }
-`;
 
-export const VIOLATIONS: TypedDocumentNode<
-  { adminDriverViolations: Page<DriverViolation> },
-  { input: PageVars & { violationType?: ViolationType; isForgiven?: boolean } }
-> = gql`
-  query AdminDriverViolations($input: AdminDriverViolationsInput) {
-    adminDriverViolations(input: $input) {
-      total
-      page
-      pageSize
-      items {
-        id
-        tripId
-        violationType
-        penaltyAction
-        affectedPassengersCount
-        penaltyUntil
-        isForgiven
-        forgivenReason
-        createdAt
-        driver {
-          id
-          fullName
-          avatarUrl
-        }
-        trip {
-          id
-          departureTime
-          stops {
-            id
-            stopName
-            stopType
-            sequenceOrder
-          }
-        }
-      }
-    }
-  }
-`;
-
-export const FORGIVE_VIOLATION: TypedDocumentNode<
-  { adminForgiveViolation: Pick<DriverViolation, "id" | "isForgiven"> },
-  { input: { violationId: string; reason: string } }
-> = gql`
-  mutation ForgiveViolation($input: AdminForgiveViolationInput!) {
-    adminForgiveViolation(input: $input) {
-      id
-      isForgiven
-      forgivenReason
-    }
-  }
-`;
-
-export const SYSTEM_SETTINGS: TypedDocumentNode<{
-  adminSystemSettings: SystemSetting[];
-}> = gql`
-  query AdminSystemSettings {
-    adminSystemSettings {
-      id
-      settingKey
-      settingValue
-      description
-      updatedAt
-    }
-  }
-`;
-
-export const UPDATE_SYSTEM_SETTING: TypedDocumentNode<
-  { adminUpdateSystemSetting: SystemSetting },
-  { input: { settingKey: string; settingValue: string } }
-> = gql`
-  mutation UpdateSystemSetting($input: AdminUpdateSystemSettingInput!) {
-    adminUpdateSystemSetting(input: $input) {
-      id
-      settingKey
-      settingValue
-      description
-      updatedAt
-    }
-  }
-`;

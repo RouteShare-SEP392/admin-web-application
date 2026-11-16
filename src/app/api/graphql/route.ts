@@ -2,14 +2,13 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import {
   BACKEND_GRAPHQL_URL,
-  MOCK_TOKEN_PREFIX,
   SESSION_COOKIE,
 } from "@/server/config";
-import {
-  executeMock,
-  shouldMock,
-  type GraphQLRequestBody,
-} from "@/server/mock/execute";
+interface GraphQLRequestBody {
+  query: string;
+  variables?: Record<string, unknown> | null;
+  operationName?: string | null;
+}
 
 interface BackendError {
   message?: string;
@@ -35,11 +34,11 @@ function sessionExpired() {
 
 /**
  * Cổng GraphQL duy nhất của admin web: gắn JWT từ cookie httpOnly rồi chuyển
- * tiếp sang backend, hoặc trả dữ liệu mẫu tuỳ NEXT_PUBLIC_API_MOCK.
+   * tiếp sang backend.
  */
 export async function POST(request: Request) {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  if (!token) return sessionExpired();
+  if (!token || token.startsWith("mock:")) return sessionExpired();
 
   let body: GraphQLRequestBody;
   try {
@@ -49,13 +48,6 @@ export async function POST(request: Request) {
   }
   if (typeof body?.query !== "string") {
     return errorResponse("Yêu cầu không hợp lệ.", 400, "BAD_REQUEST");
-  }
-
-  if (shouldMock(body)) {
-    const adminId = token.startsWith(MOCK_TOKEN_PREFIX)
-      ? token.slice(MOCK_TOKEN_PREFIX.length)
-      : "backend-admin";
-    return NextResponse.json(await executeMock(body, { adminId }));
   }
 
   let backendResponse: Response;

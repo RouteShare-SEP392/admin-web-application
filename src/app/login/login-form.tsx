@@ -3,14 +3,12 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { MOCK_ADMIN_CREDENTIALS, resolveMockMode } from "@/lib/mock-mode";
 
 export function LoginForm() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const showDemoAccount = resolveMockMode() === "all";
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -75,26 +73,6 @@ export function LoginForm() {
         {submitting ? "Đang đăng nhập…" : "Đăng nhập"}
       </Button>
 
-      {showDemoAccount ? (
-        <div className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-brand-900">
-          <p className="font-semibold">Đang chạy bằng dữ liệu mẫu</p>
-          <p className="mt-1">
-            Tài khoản: <code className="font-semibold">{MOCK_ADMIN_CREDENTIALS.identifier}</code>
-            <br />
-            Mật khẩu: <code className="font-semibold">{MOCK_ADMIN_CREDENTIALS.password}</code>
-          </p>
-          <button
-            type="button"
-            className="mt-2 font-medium text-brand-700 underline underline-offset-2 hover:text-brand-900"
-            onClick={() => {
-              setIdentifier(MOCK_ADMIN_CREDENTIALS.identifier);
-              setPassword(MOCK_ADMIN_CREDENTIALS.password);
-            }}
-          >
-            Điền sẵn tài khoản mẫu
-          </button>
-        </div>
-      ) : null}
     </form>
   );
 }

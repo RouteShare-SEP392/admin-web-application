@@ -34,8 +34,13 @@ function rootFieldNames(body: GraphQLRequestBody): string[] {
 
 /** Quyết định request đi vào lớp mock hay chuyển tiếp sang backend. */
 export function shouldMock(body: GraphQLRequestBody): boolean {
+  // Live-only operational reads never fall back to fabricated business records.
+  const liveFields = rootFieldNames(body);
+  if (liveFields.includes("adminOperationalRecords") || body.operationName === "AdminTypedSettings" || body.operationName === "AdminSaveTypedSettings") return false;
   if (MOCK_MODE === "all") return true;
   if (MOCK_MODE === "off") return false;
+  // Never apply a simulated decision to an entity read from the real backend.
+  if (liveFields.some((field) => ["adminSuspendUser", "adminUnsuspendUser", "adminCancelTrip", "adminForgiveViolation"].includes(field))) return false;
   const fields = rootFieldNames(body);
   return fields.length > 0 && fields.every((f) => PROPOSED_ROOT_FIELDS.has(f));
 }

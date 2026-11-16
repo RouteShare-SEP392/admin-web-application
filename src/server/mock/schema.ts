@@ -360,11 +360,6 @@ export const PROPOSED_SDL = /* GraphQL */ `
 
 /** Các root field backend chưa có: được lớp mock xử lý khi NEXT_PUBLIC_API_MOCK=missing. */
 export const PROPOSED_ROOT_FIELDS = new Set([
-  "adminDashboardStats",
-  "adminUsers",
-  "adminUser",
-  "adminTrips",
-  "adminTrip",
   "adminDriverViolations",
   "adminSystemSettings",
   "adminSuspendUser",

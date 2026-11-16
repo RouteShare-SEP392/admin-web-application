@@ -9,6 +9,8 @@ import {
   ShieldAlert,
   UserCheck,
   Users,
+  ArrowUpRight,
+  Compass,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -37,6 +39,27 @@ export function DashboardView() {
         mocked={isProposedApiMocked()}
       />
 
+      <section className="rs-hero relative mb-7 overflow-hidden rounded-3xl bg-brand-900 p-6 text-white sm:p-8">
+        <div className="relative z-10 max-w-xl">
+          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-brand-100"><Compass className="size-3.5" aria-hidden /> ROUTESHARE / VẬN HÀNH</span>
+          <h2 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">Mỗi hành trình,<br /><span className="text-accent">đều được kết nối.</span></h2>
+          <p className="mt-3 max-w-sm text-sm leading-relaxed text-brand-100">Một góc nhìn cho chuyến đi, con người và những việc cần bạn xử lý.</p>
+          <Link href="/trips" className="rs-button mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-brand-900">Khám phá chuyến đi <ArrowUpRight className="size-4" aria-hidden /></Link>
+        </div>
+        <div className="rs-route-art pointer-events-none absolute inset-y-0 right-0 hidden w-[48%] opacity-75 md:block" aria-hidden="true">
+          <svg viewBox="0 0 480 280" className="h-full w-full" fill="none">
+            <path d="M-40 230H150Q190 230 190 190V100Q190 60 230 60H510M50-30V110Q50 150 90 150H340Q380 150 380 190V310" stroke="white" strokeOpacity=".08" strokeWidth="32" />
+            <path d="M-40 230H150Q190 230 190 190V100Q190 60 230 60H510M50-30V110Q50 150 90 150H340Q380 150 380 190V310" stroke="white" strokeOpacity=".16" strokeDasharray="4 8" />
+            <path className="rs-route-line" d="M80 230H150Q190 230 190 190V100Q190 60 230 60H390" stroke="#c8f25a" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="80" cy="230" r="12" fill="#143d2e" stroke="#c8f25a" strokeWidth="3" />
+            <circle cx="80" cy="230" r="4" fill="#c8f25a" />
+            <circle cx="390" cy="60" r="18" fill="#c8f25a" fillOpacity=".16" />
+            <circle cx="390" cy="60" r="7" fill="#c8f25a" />
+          </svg>
+          <span className="absolute right-8 bottom-8 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-brand-100 backdrop-blur">Chia sẻ hành trình. Kết nối cộng đồng.</span>
+        </div>
+      </section>
+
       {!stats && loading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }, (_, i) => (
@@ -49,7 +72,7 @@ export function DashboardView() {
         </Card>
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rs-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatTile
               icon={Users}
               label="Người dùng"
@@ -76,7 +99,7 @@ export function DashboardView() {
             />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
             <Card>
               <CardHeader
                 title="Người dùng mới"
@@ -132,14 +155,14 @@ function StatTile({
   note: string;
 }) {
   return (
-    <Card className="p-5">
+    <Card className="rs-stat-tile relative overflow-hidden p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-muted">{label}</p>
-        <span className="inline-flex size-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+        <span className="rs-stat-icon inline-flex size-11 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
           <Icon className="size-5" aria-hidden />
         </span>
       </div>
-      <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">
+      <p className="mt-3 text-4xl font-semibold tracking-tight tabular-nums">
         {formatNumber(value)}
       </p>
       <p className="mt-1 text-sm text-muted">{note}</p>
@@ -162,7 +185,7 @@ function TaskLink({
     <li>
       <Link
         href={href}
-        className="flex items-center gap-3 px-5 py-3.5 text-sm transition-colors hover:bg-brand-50/60"
+        className="rs-task-link group flex min-h-16 items-center gap-3 px-5 py-3.5 text-sm transition-colors hover:bg-brand-50/60"
       >
         <Icon className="size-5 shrink-0 text-brand-700" aria-hidden />
         <span className="flex-1 font-medium">{label}</span>
@@ -175,7 +198,7 @@ function TaskLink({
         >
           {formatNumber(count)}
         </span>
-        <ChevronRight className="size-4 text-subtle" aria-hidden />
+        <ChevronRight className="size-4 text-subtle transition-transform group-hover:translate-x-1" aria-hidden />
       </Link>
     </li>
   );
@@ -188,18 +211,18 @@ function SignupsChart({ days }: { days: DashboardStats["signupsByDay"] }) {
   const dayLabel = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 
   return (
-    <div className="p-5">
-      <div className="flex h-44 items-end gap-3 border-b border-line" aria-hidden>
-        {days.map((day) => (
-          <div key={day.date} className="group relative flex h-full flex-1 items-end justify-center">
-            <span className="pointer-events-none absolute -top-1 rounded-md bg-ink px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100">
+    <div className="min-w-0 p-5">
+      <div className="flex h-56 items-end gap-2 border-b border-line pt-10 sm:gap-3">
+        {days.map((day, index) => (
+          <button type="button" key={day.date} aria-label={`${dayLabel(day.date)}: ${day.count} người dùng mới`} className="group relative flex h-full min-w-0 flex-1 cursor-default items-end justify-center rounded-t outline-offset-2 hover:z-10 focus-visible:z-10">
+            <span aria-hidden="true" className={`pointer-events-none absolute bottom-full z-20 mb-2 rounded-md bg-ink px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 ${index === 0 ? "left-0" : index === days.length - 1 ? "right-0" : "left-1/2 -translate-x-1/2"}`}>
               {dayLabel(day.date)}: {day.count} người dùng
             </span>
-            <div
-              className="w-full max-w-10 rounded-t bg-brand-600 transition-colors group-hover:bg-brand-800"
+            <span aria-hidden="true"
+              className="rs-chart-bar w-full max-w-10 rounded-t-lg bg-gradient-to-t from-brand-700 to-brand-400 transition-colors group-hover:from-brand-900 group-hover:to-brand-500"
               style={{ height: `${(day.count / max) * 100}%`, minHeight: day.count > 0 ? 4 : 0 }}
             />
-          </div>
+          </button>
         ))}
       </div>
       <div className="mt-2 flex gap-3 text-xs text-muted tabular-nums" aria-hidden>
@@ -235,9 +258,9 @@ function TripStatusBars({ rows }: { rows: DashboardStats["tripsByStatus"] }) {
   return (
     <ul className="space-y-3 p-5">
       {rows.map((row) => (
-        <li key={row.status} className="grid grid-cols-[7rem_1fr_2.5rem] items-center gap-3 text-sm">
+        <li key={row.status} className="grid grid-cols-[6rem_minmax(0,1fr)_3.5rem] items-center gap-2 text-sm sm:grid-cols-[7rem_minmax(0,1fr)_4rem] sm:gap-3">
           <span className="text-muted">{TRIP_STATUS[row.status].label}</span>
-          <span className="h-3 rounded-r bg-brand-600" style={{ width: `${(row.count / max) * 100}%` }} />
+          <span className="rs-status-bar h-3 rounded-full bg-gradient-to-r from-brand-700 to-brand-400" style={{ width: `${(row.count / max) * 100}%` }} />
           <span className="text-right font-medium tabular-nums">{formatNumber(row.count)}</span>
         </li>
       ))}

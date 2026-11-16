@@ -55,10 +55,7 @@ export function TripOperationsView() {
         key={`changes-${applied}-${templateId}`}
         filter={filter}
       />
-      <RecurringTemplateChanges
-        key={`template-changes-${applied}-${templateId}`}
-        filter={filter}
-      />
+      <RecurringTemplateChanges />
       <RecurringWorkAudit />
       <RecurringBatchAudit
         key={`batches-${applied}-${templateId}`}

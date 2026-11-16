@@ -35,6 +35,8 @@ Dữ liệu mẫu nằm trong bộ nhớ của server Next.js. Thao tác duyệt
 
 ## Các trang
 
+Xem `/coverage` để biết phân hệ nào có API, dùng hợp đồng đề xuất hoặc chỉ mới thiết kế. Khảo sát chi tiết và thứ tự triển khai nằm ở [docs/admin-coverage.md](docs/admin-coverage.md).
+
 | Đường dẫn | Trang | API |
 | --- | --- | --- |
 | `/login` | Đăng nhập | Backend đã có (`signIn`) |
@@ -43,10 +45,22 @@ Dữ liệu mẫu nằm trong bộ nhớ của server Next.js. Thao tác duyệt
 | `/verifications/vehicles` | Duyệt giấy đăng ký xe | Backend đã có |
 | `/users`, `/users/[id]` | Người dùng, khoá và mở khoá | Đề xuất |
 | `/trips`, `/trips/[id]` | Chuyến đi, huỷ chuyến | Đề xuất |
+| `/journey-history` | Lịch sử hoàn thành / hủy / hết hạn | Dùng hợp đồng chuyến đề xuất |
+| `/trip-operations` | Lịch định kỳ và thay đổi chuyến | Một phần đã có Backend |
+| `/operations/bookings` | Đặt chỗ và mốc hành trình | Thiết kế, chưa có API admin |
+| `/operations/payments` | Thu tiền, đối soát và khoản phải trả | Thiết kế, chưa có API admin |
+| `/operations/reviews` | Đánh giá hai chiều | Thiết kế, chưa có API admin |
+| `/operations/notifications` | Inbox và giao nhận push | Thiết kế, chưa có API admin |
+| `/operations/support` | Hỗ trợ và phản ánh | Đề xuất mới, chưa có module Backend |
+| `/operations/audit` | Nhật ký quản trị | Thiết kế, chưa có kho audit tổng hợp |
+| `/coverage` | Phạm vi và trạng thái tích hợp | Khảo sát mã nguồn, không phải health check |
 | `/violations` | Vi phạm tài xế, tha vi phạm | Đề xuất |
+| `/payouts` | Chi trả tài xế: kiểm tra và duyệt yêu cầu rút | Bản thiết kế cục bộ, chưa nối API, không chuyển tiền |
 | `/settings` | Cấu hình hệ thống | Đề xuất |
 
 Trang dùng dữ liệu mẫu có nhãn "Dữ liệu mẫu" cạnh tiêu đề.
+
+Màn `/payouts` mặc định không hiện dữ liệu giả. Bấm **Xem và thử luồng mẫu** để kiểm tra thiết kế duyệt/từ chối; mọi thao tác chỉ ở bộ nhớ trình duyệt, không gọi API chi ở bất kỳ chế độ mock nào. Xem [yêu cầu tích hợp chi tài xế](docs/driver-payouts.md).
 
 ## Hợp đồng API cho backend
 

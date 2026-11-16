@@ -6,7 +6,7 @@ import { Button } from "./button";
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded-xl border border-line bg-white", className)}
+      className={cn("rs-card min-w-0 rounded-2xl border border-line bg-white", className)}
       {...props}
     />
   );
@@ -44,10 +44,10 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div className="rs-page-heading mb-7 flex flex-wrap items-start justify-between gap-4">
       <div>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
           {mocked ? <MockBadge /> : null}
         </div>
         {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}

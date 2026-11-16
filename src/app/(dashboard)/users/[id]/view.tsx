@@ -1,13 +1,11 @@
 "use client";
 
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import { ArrowLeft, Lock, LockOpen, Star } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ReasonDialog } from "@/components/ui/dialog";
 import {
   Avatar,
   Card,
@@ -17,8 +15,7 @@ import {
   MockBadge,
   TableSkeleton,
 } from "@/components/ui/misc";
-import { useToast } from "@/components/ui/toast";
-import { SUSPEND_USER, UNSUSPEND_USER, USER_DETAIL } from "@/lib/graphql";
+import { USER_DETAIL } from "@/lib/graphql";
 import {
   DRIVER_DOCUMENT_TYPE,
   GENDER,
@@ -27,17 +24,12 @@ import {
   VEHICLE_TYPE,
   VERIFICATION_STATUS,
 } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
-import { errorMessage, formatDate, formatDateTime } from "@/lib/utils";
+import { isExistingApiMocked } from "@/lib/mock-mode";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 export function UserDetailView() {
   const { id } = useParams<{ id: string }>();
   const { data, loading, error, refetch } = useQuery(USER_DETAIL, { variables: { id } });
-  const [suspend, { loading: suspending }] = useMutation(SUSPEND_USER);
-  const [unsuspend, { loading: unsuspending }] = useMutation(UNSUSPEND_USER);
-  const notify = useToast();
-  const [suspendOpen, setSuspendOpen] = useState(false);
-  const [suspendError, setSuspendError] = useState<string | null>(null);
 
   const user = data?.adminUser;
 
@@ -54,25 +46,6 @@ export function UserDetailView() {
 
   const profile = user.driverProfile;
 
-  async function handleSuspend(reason: string) {
-    setSuspendError(null);
-    try {
-      await suspend({ variables: { input: { userId: id, reason } } });
-      setSuspendOpen(false);
-      notify(`Đã khoá tài khoản ${user!.fullName}.`);
-    } catch (cause) {
-      setSuspendError(errorMessage(cause));
-    }
-  }
-
-  async function handleUnsuspend() {
-    try {
-      await unsuspend({ variables: { userId: id } });
-      notify(`Đã mở khoá tài khoản ${user!.fullName}.`);
-    } catch (cause) {
-      notify(errorMessage(cause), "error");
-    }
-  }
 
   return (
     <>
@@ -86,7 +59,7 @@ export function UserDetailView() {
               <h1 className="text-xl font-semibold">{user.fullName}</h1>
               <StatusBadge meta={USER_STATUS[user.status]} />
               {user.role === "ADMIN" ? <Badge tone="active">{USER_ROLE.ADMIN}</Badge> : null}
-              {isProposedApiMocked() ? <MockBadge /> : null}
+            {isExistingApiMocked() ? <MockBadge /> : null}
             </div>
             <p className="mt-1 text-sm text-muted">
               Tham gia ngày {formatDate(user.createdAt)}
@@ -95,14 +68,14 @@ export function UserDetailView() {
         </div>
 
         {user.role === "ADMIN" ? null : user.status === "ACTIVE" ? (
-          <Button variant="danger" onClick={() => setSuspendOpen(true)}>
+          <Button variant="danger" disabled title="Khóa tài khoản thật chưa có API và cơ chế chặn phiên tương ứng">
             <Lock className="size-4" aria-hidden />
             Khoá tài khoản
           </Button>
         ) : user.status === "SUSPENDED" ? (
-          <Button variant="secondary" onClick={handleUnsuspend} disabled={unsuspending}>
+          <Button variant="secondary" disabled title="Mở khóa tài khoản thật chưa có API tương ứng">
             <LockOpen className="size-4" aria-hidden />
-            {unsuspending ? "Đang mở khoá…" : "Mở khoá tài khoản"}
+            Mở khoá tài khoản
           </Button>
         ) : null}
       </Card>
@@ -221,21 +194,6 @@ export function UserDetailView() {
         </Card>
       </div>
 
-      <ReasonDialog
-        open={suspendOpen}
-        onClose={() => {
-          setSuspendOpen(false);
-          setSuspendError(null);
-        }}
-        title={`Khoá tài khoản ${user.fullName}?`}
-        description="Người dùng sẽ không thể đăng nhập, đặt chỗ hay đăng chuyến cho đến khi được mở khoá."
-        reasonLabel="Lý do khoá"
-        confirmLabel="Khoá tài khoản"
-        danger
-        busy={suspending}
-        error={suspendError}
-        onConfirm={handleSuspend}
-      />
     </>
   );
 }
