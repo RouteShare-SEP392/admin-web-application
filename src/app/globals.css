@@ -26,8 +26,80 @@
 }
 
 body {
-  background: var(--color-canvas);
+  background: #f7f8fa;
   color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.rs-card {
+  box-shadow: 0 1px 3px rgb(20 30 25 / 0.025);
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.rs-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d8d3 transparent;
+  overscroll-behavior: contain;
+}
+
+.rs-map-marker {
+  width: 28px;
+  height: 28px;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #1f5c45;
+  box-shadow: 0 2px 8px #0004;
+  cursor: pointer;
+}
+.rs-map-marker-destination { background: #dc2626; border-radius: 50% 50% 50% 0; }
+.rs-map-marker-intermediate_stop { background: #fbbf24; color: #422006; font-size: 12px; font-weight: 700; }
+
+.rs-page-enter { animation: rs-enter 200ms ease-out both; }
+.rs-stagger > * { animation: rs-enter 240ms ease-out both; }
+.rs-stagger > :nth-child(2) { animation-delay: 60ms; }
+.rs-stagger > :nth-child(3) { animation-delay: 120ms; }
+.rs-stagger > :nth-child(4) { animation-delay: 180ms; }
+
+.rs-hero {
+  background-image: radial-gradient(ellipse at 80% 20%, #437d6680, transparent 65%), linear-gradient(120deg, #143d2e, #194c39);
+  box-shadow: 0 14px 36px rgb(20 61 46 / 0.15);
+}
+
+.rs-route-line {
+  stroke-dasharray: 500;
+  stroke-dashoffset: 0;
+  animation: rs-route-draw 1600ms ease-out both;
+}
+
+.rs-button {
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+.rs-button:active:not(:disabled) { transform: scale(.97); }
+.rs-nav-link { transition: background-color 180ms ease, color 180ms ease, transform 180ms ease; }
+.rs-chart-bar { transform-origin: bottom; animation: rs-grow-y 700ms ease-out both; }
+.rs-status-bar { transform-origin: left; animation: rs-grow-x 700ms ease-out both; }
+.rs-stat-icon { transition: transform 220ms ease, background-color 220ms ease; }
+
+@media (hover: hover) {
+  .rs-button:hover:not(:disabled) { box-shadow: 0 2px 4px rgb(20 61 46 / 0.06); }
+}
+
+@keyframes rs-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes rs-route-draw { from { stroke-dashoffset: 500; } to { stroke-dashoffset: 0; } }
+@keyframes rs-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes rs-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-900);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 3px;
 }
 
 /* Hộp thoại dùng thẻ <dialog> gốc của trình duyệt. */
@@ -39,6 +111,22 @@ dialog[open] {
   animation: dialog-in 140ms ease-out;
 }
 
+.rs-settings-tab { transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
+.rs-review-queue-item { transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
+.rs-review-detail { animation: rs-enter 180ms ease-out both; }
+.rs-record-enter { animation: rs-enter 180ms ease-out both; }
+.rs-trip-card { animation: rs-enter 180ms ease-out both; transition: border-color 160ms ease, box-shadow 160ms ease; }
+@media (hover: hover) { .rs-trip-card:hover { border-color: var(--color-brand-200); box-shadow: 0 4px 14px rgb(20 40 30 / .05); } }
+.rs-document-canvas { background-image: radial-gradient(#cfd6d2 1px, transparent 1px); background-size: 16px 16px; }
+.rs-settings-panel { animation: rs-enter 180ms ease-out both; }
+.rs-save-bar { animation: rs-enter 200ms ease-out both; }
+.rs-settings-layout input { transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease; }
+.rs-settings-layout input:focus { box-shadow: 0 0 0 3px rgb(31 92 69 / 0.07); }
+.rs-settings-layout input[aria-invalid="true"] { border-color: #dc2626; background: #fffafa; }
+.rs-confirm-dialog[open] { animation: rs-dialog-enter 200ms ease-out both; }
+.rs-confirm-dialog::backdrop { background: rgb(15 23 20 / 0.32); backdrop-filter: blur(3px); }
+@keyframes rs-dialog-enter { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+
 @keyframes dialog-in {
   from {
     opacity: 0;
@@ -47,7 +135,22 @@ dialog[open] {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .rs-page-enter, .rs-page-heading, .rs-stagger > *, .rs-route-line, .rs-chart-bar, .rs-status-bar, .animate-pulse {
+    animation: none;
+  }
+  .rs-card, .rs-button, .rs-nav-link, .rs-stat-icon, .rs-task-link svg {
+    transition: none;
+  }
+  .rs-button:hover:not(:disabled), .rs-button:active:not(:disabled), .rs-nav-link:hover, .rs-stat-tile:hover .rs-stat-icon, .rs-task-link:hover svg {
+    transform: none;
+  }
   dialog[open] {
     animation: none;
   }
+  .rs-settings-panel, .rs-save-bar, .rs-confirm-dialog[open] { animation: none; }
+  .rs-settings-tab, .rs-settings-layout input, .rs-app-sidebar { transition: none; }
+  .rs-review-detail { animation: none; }
+  .rs-record-enter { animation: none; }
+  .rs-trip-card { animation: none; transition: none; }
+  .rs-review-queue-item { transition: none; }
 }

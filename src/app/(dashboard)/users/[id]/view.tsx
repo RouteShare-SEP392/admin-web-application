@@ -1,13 +1,11 @@
 "use client";
 
-import { useMutation, useQuery } from "@apollo/client/react";
-import { ArrowLeft, Lock, LockOpen, Star } from "lucide-react";
+import { useQuery } from "@apollo/client/react";
+import { ArrowLeft, Lock, LockOpen, Mail, Phone, Star, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ReasonDialog } from "@/components/ui/dialog";
 import {
   Avatar,
   Card,
@@ -17,8 +15,7 @@ import {
   MockBadge,
   TableSkeleton,
 } from "@/components/ui/misc";
-import { useToast } from "@/components/ui/toast";
-import { SUSPEND_USER, UNSUSPEND_USER, USER_DETAIL } from "@/lib/graphql";
+import { USER_DETAIL } from "@/lib/graphql";
 import {
   DRIVER_DOCUMENT_TYPE,
   GENDER,
@@ -27,17 +24,12 @@ import {
   VEHICLE_TYPE,
   VERIFICATION_STATUS,
 } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
-import { errorMessage, formatDate, formatDateTime } from "@/lib/utils";
+import { isExistingApiMocked } from "@/lib/mock-mode";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 export function UserDetailView() {
   const { id } = useParams<{ id: string }>();
   const { data, loading, error, refetch } = useQuery(USER_DETAIL, { variables: { id } });
-  const [suspend, { loading: suspending }] = useMutation(SUSPEND_USER);
-  const [unsuspend, { loading: unsuspending }] = useMutation(UNSUSPEND_USER);
-  const notify = useToast();
-  const [suspendOpen, setSuspendOpen] = useState(false);
-  const [suspendError, setSuspendError] = useState<string | null>(null);
 
   const user = data?.adminUser;
 
@@ -54,39 +46,22 @@ export function UserDetailView() {
 
   const profile = user.driverProfile;
 
-  async function handleSuspend(reason: string) {
-    setSuspendError(null);
-    try {
-      await suspend({ variables: { input: { userId: id, reason } } });
-      setSuspendOpen(false);
-      notify(`Đã khoá tài khoản ${user!.fullName}.`);
-    } catch (cause) {
-      setSuspendError(errorMessage(cause));
-    }
-  }
-
-  async function handleUnsuspend() {
-    try {
-      await unsuspend({ variables: { userId: id } });
-      notify(`Đã mở khoá tài khoản ${user!.fullName}.`);
-    } catch (cause) {
-      notify(errorMessage(cause), "error");
-    }
-  }
 
   return (
     <>
       <BackLink />
 
-      <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+      <section className="rs-profile-header relative mb-6 overflow-hidden rounded-2xl border border-line bg-white px-6 pb-6 pt-14">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-20 bg-brand-50" />
+        <div className="relative flex flex-wrap items-end justify-between gap-5">
         <div className="flex items-center gap-4">
           <Avatar name={user.fullName} src={user.avatarUrl} size="lg" />
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-semibold">{user.fullName}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{user.fullName}</h1>
               <StatusBadge meta={USER_STATUS[user.status]} />
               {user.role === "ADMIN" ? <Badge tone="active">{USER_ROLE.ADMIN}</Badge> : null}
-              {isProposedApiMocked() ? <MockBadge /> : null}
+            {isExistingApiMocked() ? <MockBadge /> : null}
             </div>
             <p className="mt-1 text-sm text-muted">
               Tham gia ngày {formatDate(user.createdAt)}
@@ -95,19 +70,23 @@ export function UserDetailView() {
         </div>
 
         {user.role === "ADMIN" ? null : user.status === "ACTIVE" ? (
-          <Button variant="danger" onClick={() => setSuspendOpen(true)}>
+          <Button variant="danger" disabled title="Khóa tài khoản thật chưa có API và cơ chế chặn phiên tương ứng">
             <Lock className="size-4" aria-hidden />
             Khoá tài khoản
           </Button>
         ) : user.status === "SUSPENDED" ? (
-          <Button variant="secondary" onClick={handleUnsuspend} disabled={unsuspending}>
+          <Button variant="secondary" disabled title="Mở khóa tài khoản thật chưa có API tương ứng">
             <LockOpen className="size-4" aria-hidden />
-            {unsuspending ? "Đang mở khoá…" : "Mở khoá tài khoản"}
+            Mở khoá tài khoản
           </Button>
         ) : null}
-      </Card>
+        </div>
+        <div className="relative mt-6 flex flex-wrap gap-x-6 gap-y-3 border-t border-line pt-4 text-sm text-muted"><span className="inline-flex items-center gap-2"><Mail className="size-4" aria-hidden />{user.email ?? "Chưa có email"}</span><span className="inline-flex items-center gap-2"><Phone className="size-4" aria-hidden />{user.phone ?? "Chưa có số điện thoại"}</span><span className="inline-flex items-center gap-2"><UserRound className="size-4" aria-hidden />{USER_ROLE[user.role]}</span></div>
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4"><div className="bg-white px-5 py-4"><p className="text-xs text-muted">Chuyến đã đi</p><p className="mt-2 text-2xl font-semibold tabular-nums">{user.totalRidesAsPassenger}</p></div><div className="bg-white px-5 py-4"><p className="text-xs text-muted">Đánh giá hành khách</p><div className="mt-2"><Rating value={user.ratingAsPassenger} /></div></div><div className="bg-white px-5 py-4"><p className="text-xs text-muted">Chuyến đã chở</p><p className="mt-2 text-2xl font-semibold tabular-nums">{user.totalRidesAsDriver}</p></div><div className="bg-white px-5 py-4"><p className="text-xs text-muted">Đánh giá tài xế</p><div className="mt-2">{profile ? <Rating value={user.ratingAsDriver} /> : "—"}</div></div></div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <Card>
           <CardHeader title="Thông tin tài khoản" />
           <dl className="divide-y divide-line px-5 py-2">
@@ -131,20 +110,6 @@ export function UserDetailView() {
         </Card>
 
         <Card>
-          <CardHeader title="Hoạt động" />
-          <dl className="divide-y divide-line px-5 py-2">
-            <Fact label="Chuyến đã đi (hành khách)">{user.totalRidesAsPassenger}</Fact>
-            <Fact label="Điểm đánh giá (hành khách)">
-              <Rating value={user.ratingAsPassenger} />
-            </Fact>
-            <Fact label="Chuyến đã chở (tài xế)">{user.totalRidesAsDriver}</Fact>
-            <Fact label="Điểm đánh giá (tài xế)">
-              {profile ? <Rating value={user.ratingAsDriver} /> : "—"}
-            </Fact>
-          </dl>
-        </Card>
-
-        <Card className="lg:col-span-2">
           <CardHeader
             title="Hồ sơ tài xế"
             action={
@@ -158,7 +123,7 @@ export function UserDetailView() {
               Người dùng này chưa đăng ký làm tài xế.
             </p>
           ) : (
-            <div className="grid gap-x-8 gap-y-6 px-5 py-4 lg:grid-cols-3">
+            <div className="grid gap-x-8 gap-y-6 px-5 py-4 xl:grid-cols-2">
               <dl className="divide-y divide-line">
                 <Fact label="Kinh nghiệm lái xe">{profile.experienceYears} năm</Fact>
                 <Fact label="Số lần bỏ chuyến">{profile.noShowStrikeCount}</Fact>
@@ -221,21 +186,6 @@ export function UserDetailView() {
         </Card>
       </div>
 
-      <ReasonDialog
-        open={suspendOpen}
-        onClose={() => {
-          setSuspendOpen(false);
-          setSuspendError(null);
-        }}
-        title={`Khoá tài khoản ${user.fullName}?`}
-        description="Người dùng sẽ không thể đăng nhập, đặt chỗ hay đăng chuyến cho đến khi được mở khoá."
-        reasonLabel="Lý do khoá"
-        confirmLabel="Khoá tài khoản"
-        danger
-        busy={suspending}
-        error={suspendError}
-        onConfirm={handleSuspend}
-      />
     </>
   );
 }

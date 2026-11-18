@@ -31,6 +31,8 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
+          build-args: |
+            NEXT_PUBLIC_GOONG_MAPTILES_KEY=${{ vars.NEXT_PUBLIC_GOONG_MAPTILES_KEY }}
 
   publish:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -73,6 +75,8 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          build-args: |
+            NEXT_PUBLIC_GOONG_MAPTILES_KEY=${{ vars.NEXT_PUBLIC_GOONG_MAPTILES_KEY }}
           tags: ghcr.io/routeshare-sep392/admin-web-application:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}

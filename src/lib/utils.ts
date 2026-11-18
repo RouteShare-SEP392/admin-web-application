@@ -29,15 +29,15 @@ const timeFormat = new Intl.DateTimeFormat("vi-VN", {
 const numberFormat = new Intl.NumberFormat("vi-VN");
 
 export function formatDateTime(value: string | null | undefined): string {
-  return value ? dateTimeFormat.format(new Date(value)) : "—";
+  return value && Number.isFinite(Date.parse(value)) ? dateTimeFormat.format(new Date(value)) : "—";
 }
 
 export function formatDate(value: string | null | undefined): string {
-  return value ? dateFormat.format(new Date(value)) : "—";
+  return value && Number.isFinite(Date.parse(value)) ? dateFormat.format(new Date(value)) : "—";
 }
 
 export function formatTime(value: string | null | undefined): string {
-  return value ? timeFormat.format(new Date(value)) : "—";
+  return value && Number.isFinite(Date.parse(value)) ? timeFormat.format(new Date(value)) : "—";
 }
 
 export function formatNumber(value: number): string {
@@ -45,7 +45,7 @@ export function formatNumber(value: number): string {
 }
 
 export function formatCurrency(value: number): string {
-  return `${numberFormat.format(Math.round(value))}đ`;
+  return Number.isFinite(value) ? `${numberFormat.format(value)}đ` : "—";
 }
 
 export function formatDuration(minutes: number): string {
@@ -57,7 +57,11 @@ export function formatDuration(minutes: number): string {
 
 /** Thông báo lỗi tiếng Việt để hiển thị cho quản trị viên. */
 export function errorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
+  if (error instanceof Error && error.message) {
+    if (/Cannot query field|Unknown type|GRAPHQL_VALIDATION_FAILED/i.test(error.message)) return "Chức năng chưa tương thích với máy chủ. Vui lòng liên hệ quản trị hệ thống.";
+    if (/SQL|column .* does not exist|relation .* does not exist|ECONN|fetch failed|Failed to fetch|Internal server error/i.test(error.message)) return "Không tải được dữ liệu từ máy chủ. Vui lòng thử lại sau.";
+    return error.message;
+  }
   return "Đã có lỗi xảy ra. Vui lòng thử lại.";
 }
 

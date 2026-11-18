@@ -2,7 +2,6 @@
 
 import {
   AlertCircle,
-  AlertTriangle,
   CalendarClock,
   Car,
   CheckCircle2,
@@ -15,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/misc";
 import type { Tone } from "@/lib/labels";
-import type { Trip, TripBookingMilestone } from "@/lib/types";
+import type { Trip } from "@/lib/types";
 import { cn, formatDateTime, formatTime } from "@/lib/utils";
 
 export interface VarianceResult {
@@ -35,6 +34,9 @@ export function computeDepartureVariance(
   const now = Date.now();
 
   if (!actualIso) {
+    if (status === "COMPLETED" || status === "IN_PROGRESS" || status === "EXPIRED") {
+      return { minutes: 0, label: "Không có mốc xuất phát được lưu", shortLabel: "Thiếu dữ liệu", tone: "neutral" };
+    }
     if (status === "CANCELLED") {
       return {
         minutes: 0,
@@ -153,6 +155,7 @@ export function computeWaitMinutes(
 }
 
 export function TripMilestoneAudit({ trip }: { trip: Trip }) {
+  if (trip.bookings === undefined) return <Card className="mt-6"><CardHeader title="Mốc hành trình & đặt chỗ" description="Chưa có dữ liệu mốc đặt chỗ từ API quản trị." /><p className="p-5 text-sm text-muted">Không đủ dữ liệu để thống kê lượt đón, thời gian chờ hoặc độ đúng giờ. Thiếu dữ liệu không đồng nghĩa không có hành khách.</p></Card>;
   const depVariance = computeDepartureVariance(
     trip.departureTime,
     trip.actualStartedAt,

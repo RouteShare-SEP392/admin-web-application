@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CircleDot, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StopSummary {
@@ -23,9 +23,9 @@ export function TripRoute({
   return (
     <div className={cn("min-w-52 leading-tight", className)}>
       <p className="flex flex-wrap items-center gap-x-1.5 font-medium">
-        {ordered[0].stopName}
+        <span className="inline-flex min-w-0 items-center gap-1.5"><CircleDot className="size-4 shrink-0 text-brand-700" aria-label="Điểm đi" /><span>{ordered[0].stopName}</span></span>
         <ArrowRight className="size-3.5 shrink-0 text-subtle" aria-label="đến" />
-        {ordered[ordered.length - 1].stopName}
+        <span className="inline-flex min-w-0 items-center gap-1.5"><MapPin className="size-4 shrink-0 text-red-600" aria-label="Điểm đến" /><span>{ordered[ordered.length - 1].stopName}</span></span>
       </p>
       {intermediate > 0 ? (
         <p className="text-xs text-muted">{intermediate} điểm dừng giữa chừng</p>

@@ -2,16 +2,14 @@
 import { TripMilestoneAudit } from "@/components/trip-monitoring/trip-milestone-audit";
 import { TripChangeAudit } from "@/components/trip-operations/trip-change-audit";
 
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import { ArrowLeft, Ban } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
 import { PersonCell } from "@/components/person-cell";
-import { RouteSketch } from "@/components/route-sketch";
+import { TripRouteMap } from "@/components/trip-route-map";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ReasonDialog } from "@/components/ui/dialog";
 import {
   Card,
   CardHeader,
@@ -20,14 +18,12 @@ import {
   MockBadge,
   TableSkeleton,
 } from "@/components/ui/misc";
-import { useToast } from "@/components/ui/toast";
-import { CANCEL_TRIP, TRIP_DETAIL } from "@/lib/graphql";
+import { TRIP_DETAIL } from "@/lib/graphql";
 import { LUGGAGE, STOP_TYPE, TRIP_STATUS, VEHICLE_TYPE } from "@/lib/labels";
-import { isProposedApiMocked } from "@/lib/mock-mode";
+import { isExistingApiMocked, resolveMockMode } from "@/lib/mock-mode";
 import type { TripStop } from "@/lib/types";
 import {
   cn,
-  errorMessage,
   formatCurrency,
   formatDateTime,
   formatDuration,
@@ -40,10 +36,6 @@ export function TripDetailView() {
   const { data, loading, error, refetch } = useQuery(TRIP_DETAIL, {
     variables: { id },
   });
-  const [cancel, { loading: cancelling }] = useMutation(CANCEL_TRIP);
-  const notify = useToast();
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const trip = data?.adminTrip;
 
@@ -66,26 +58,16 @@ export function TripDetailView() {
     .filter((stop): stop is TripStop => stop !== null)
     .sort((a, b) => a.sequenceOrder - b.sequenceOrder);
 
-  async function handleCancel(reason: string) {
-    setCancelError(null);
-    try {
-      await cancel({ variables: { input: { tripId: id, reason } } });
-      setCancelOpen(false);
-      notify("Đã huỷ chuyến đi.");
-    } catch (cause) {
-      setCancelError(errorMessage(cause));
-    }
-  }
 
   return (
     <>
       <BackLink />
 
-      <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+      <section className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <StatusBadge meta={TRIP_STATUS[trip.status]} />
-            {isProposedApiMocked() ? <MockBadge /> : null}
+            {isExistingApiMocked() ? <MockBadge /> : null}
           </div>
           <h1 className="text-xl font-semibold">
             {stops.length > 0
@@ -98,12 +80,14 @@ export function TripDetailView() {
           </p>
         </div>
         {trip.status === "PUBLISHED" ? (
-          <Button variant="danger" onClick={() => setCancelOpen(true)}>
+          <Button variant="danger" disabled title="API hủy chuyến quản trị chưa được triển khai">
             <Ban className="size-4" aria-hidden />
             Huỷ chuyến
           </Button>
         ) : null}
-      </Card>
+      </section>
+
+      {trip.status === "PUBLISHED" && resolveMockMode() !== "all" ? <p className="mb-5 text-sm text-muted">Hủy chuyến quản trị chưa khả dụng: cần Backend xử lý đặt chỗ liên quan, lý do, thông báo và audit trong cùng nghiệp vụ.</p> : null}
 
       {trip.status === "CANCELLED" ? (
         <p className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -112,7 +96,7 @@ export function TripDetailView() {
             {trip.cancelledBy
               ? trip.cancelledBy === trip.driverId
                 ? " bởi tài xế"
-                : " bởi quản trị viên"
+                : " bởi người xử lý khác (chưa có vai trò xác nhận)"
               : ""}
             .
           </span>{" "}
@@ -120,15 +104,15 @@ export function TripDetailView() {
         </p>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+      <div className="space-y-6">
         <Card>
           <CardHeader
             title="Lộ trình"
             description={`${formatNumber(trip.totalDistanceKm)} km · ${formatDuration(trip.totalDurationMinutes)}`}
           />
-          <div className="space-y-5 p-5">
-            <RouteSketch stops={stops} polyline={trip.routePolyline} />
-            <ol>
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="min-w-0 bg-gray-50 p-3"><TripRouteMap stops={stops} polyline={trip.routePolyline} /></div>
+            <ol className="max-h-[520px] overflow-y-auto border-t border-line p-5 lg:border-t-0 lg:border-l" aria-label="Lịch trình đã lưu">
               {stops.map((stop, index) => (
                 <li
                   key={stop.id}
@@ -143,9 +127,9 @@ export function TripDetailView() {
                   <span
                     className={cn(
                       "relative inline-flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold text-brand-900",
-                      stop.stopType === "DESTINATION"
-                        ? "border-brand-900 bg-accent"
-                        : "border-brand-700 bg-white",
+                       stop.stopType === "DESTINATION"
+                         ? "border-red-500 bg-red-50 text-red-700"
+                         : stop.stopType === "INTERMEDIATE_STOP" ? "border-amber-400 bg-amber-50 text-amber-800" : "border-brand-700 bg-white",
                     )}
                   >
                     {index + 1}
@@ -172,14 +156,14 @@ export function TripDetailView() {
           </div>
         </Card>
 
-        <div className="space-y-6">
+        <div className="grid items-start gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader title="Thông tin chuyến" />
             <dl className="divide-y divide-line px-5 py-2">
-              <Fact label="Ghế trống / ghế chia sẻ">
-                {trip.availableSeats}/{trip.totalSeatsOffered}
+              <Fact label="Ghế chia sẻ đã đăng">
+                {trip.totalSeatsOffered}
               </Fact>
-              <Fact label="Giá mỗi km, mỗi ghế">
+              <Fact label="Mức chia sẻ tổng mỗi km">
                 {trip.pricing
                   ? formatCurrency(trip.pricing.baseCostPerKm)
                   : "—"}
@@ -237,21 +221,6 @@ export function TripDetailView() {
 
       <TripMilestoneAudit trip={trip} />
       <TripChangeAudit tripId={id} />
-      <ReasonDialog
-        open={cancelOpen}
-        onClose={() => {
-          setCancelOpen(false);
-          setCancelError(null);
-        }}
-        title="Huỷ chuyến đi này?"
-        description="Chuyến sẽ đóng đặt chỗ và không thể mở lại. Chỉ huỷ khi chuyến vi phạm quy định."
-        reasonLabel="Lý do huỷ"
-        confirmLabel="Huỷ chuyến"
-        danger
-        busy={cancelling}
-        error={cancelError}
-        onConfirm={handleCancel}
-      />
     </>
   );
 }

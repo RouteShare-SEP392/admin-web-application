@@ -6,7 +6,8 @@ import { SESSION_COOKIE } from "@/server/config";
  * backend thực hiện ở mỗi request GraphQL (xem app/api/graphql/route.ts).
  */
 export function proxy(request: NextRequest) {
-  const hasSession = request.cookies.has(SESSION_COOKIE);
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  const hasSession = !!token && !token.startsWith("mock:");
   const isLoginPage = request.nextUrl.pathname === "/login";
 
   if (!hasSession && !isLoginPage) {

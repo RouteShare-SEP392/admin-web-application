@@ -1,0 +1,14 @@
+import ts from "typescript";
+import fs from "node:fs";
+import assert from "node:assert/strict";
+const source = fs.readFileSync("src/lib/saved-route.ts", "utf8");
+const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+const compiled = { exports: {} };
+new Function("module", "exports", js)(compiled, compiled.exports);
+const { decodeSavedRoute: decode, validCoordinate: valid } = compiled.exports;
+assert.deepEqual(decode('_p~iF~ps|U_ulLnnqC_mqNvxq`@'), [[-120.2, 38.5], [-120.95, 40.7], [-126.453, 43.252]]);
+for (const input of [null, "", "~", "abc", "\u0000", "?", "~~~~~~~?"]) assert.deepEqual(decode(input), []);
+assert.equal(valid(NaN, 10), false);
+assert.equal(valid(181, 10), false);
+assert.equal(valid(106.7, 10.7), true);
+console.log("Saved-route geometry checks passed.");

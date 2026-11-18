@@ -1,0 +1,18 @@
+export const CONDUCT_RULES = [
+  ["P01", "Hành khách", "Không có mặt tại điểm đón", 2, "Booking đã duyệt; tài xế đến đúng điểm/giờ, có liên lạc và xác minh khách vắng mặt không có lý do được chấp nhận."],
+  ["P02", "Hành khách", "Cố tình gây chậm đón", 1, "Có bằng chứng khách biết giờ hẹn nhưng cố ý gây gián đoạn; không cộng thêm P01 cho cùng lần đón."],
+  ["P03", "Hành khách", "Hủy nhằm né trách nhiệm", 2, "Chứng minh hành vi lạm dụng và ảnh hưởng; không phạt việc hủy đúng quyền hoặc do tài xế trễ 15 phút."],
+  ["P04", "Hành khách", "Xúc phạm, gây rối", 1, "Xem ngữ cảnh; không phạt phản ánh hoặc đánh giá tiêu cực hợp lệ."],
+  ["P05", "Hành khách", "Ép thay đổi chỗ hoặc hành trình", 2, "Cố tình ép thêm người/hành lý/đổi tuyến sau khi bị từ chối; yêu cầu đơn thuần không phải vi phạm."],
+  ["P06", "Hành khách", "Gian dối về thanh toán", 4, "Có bằng chứng cố ý làm giả xác nhận; khoản chưa trả hoặc provider pending không đủ căn cứ."],
+  ["D01", "Tài xế", "Không đến đón hoặc bỏ khách", 2, "Xác minh khách sẵn sàng tại điểm đã chấp nhận; đối chiếu hình phạt bỏ chuyến cũ để tránh phạt hai lần."],
+  ["D02", "Tài xế", "Đến đón muộn do lỗi tài xế", 1, "Có ảnh hưởng và căn cứ lỗi; ETA, kẹt xe hoặc thời tiết không tự chứng minh vi phạm."],
+  ["D03", "Tài xế", "Hủy hoặc ép khách hủy để né trách nhiệm", 2, "Có bằng chứng cố ý; không cộng thêm D01 cho cùng hành vi bỏ khách."],
+  ["D04", "Tài xế", "Xúc phạm, gây rối", 1, "Phân biệt xúc phạm với hướng dẫn an toàn hoặc từ chối hợp lệ."],
+  ["D05", "Tài xế", "Ép thu vượt tiền đã chốt", 4, "Đòi khoản ngoài thỏa thuận, có bằng chứng; không sửa giá đã chốt để giải quyết report."],
+  ["D06", "Tài xế", "Cố ý dùng sai người hoặc xe đã duyệt", 4, "Xác minh danh tính/xe và ngữ cảnh; liên kết xét duyệt KYC, không sửa lịch sử."],
+  ["S01", "Cả hai", "Báo cáo sai, ngụy tạo bằng chứng", 4, "Phải chứng minh cố ý giả mạo; report thiếu bằng chứng hoặc bị bác không đồng nghĩa báo sai."],
+  ["S02", "Cả hai", "Đe dọa, quấy rối nghiêm trọng", 4, "Đánh giá an toàn riêng; không chờ hết điểm, không tự áp dụng biện pháp khẩn cấp chưa có quy trình."],
+  ["S03", "Cả hai", "Xâm phạm thông tin cá nhân", 4, "Xác minh phát tán/lạm dụng trái phép; cung cấp bằng chứng cho hỗ trợ đúng quyền không phải vi phạm."],
+  ["S04", "Cả hai", "Cố ý làm hư hỏng tài sản", 4, "Chứng minh hành vi và chủ thể; trừ điểm không tự xác lập tiền bồi thường."],
+] as const;

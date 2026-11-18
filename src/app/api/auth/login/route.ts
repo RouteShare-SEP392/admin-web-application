@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   BACKEND_GRAPHQL_URL,
-  MOCK_ADMIN_CREDENTIALS,
-  MOCK_MODE,
-  MOCK_TOKEN_PREFIX,
   SESSION_COOKIE,
   SESSION_MAX_AGE_SECONDS,
 } from "@/server/config";
-import { getStore } from "@/server/mock/store";
 
 const SIGN_IN_MUTATION = /* GraphQL */ `
   mutation AdminSignIn($input: SignInInput!) {
@@ -32,29 +28,6 @@ interface SignInResult {
 
 function fail(message: string, status: number) {
   return NextResponse.json({ message }, { status });
-}
-
-function signInMock(identifier: string, password: string): SignInResult {
-  const matches =
-    identifier.toLowerCase() === MOCK_ADMIN_CREDENTIALS.identifier &&
-    password === MOCK_ADMIN_CREDENTIALS.password;
-  const admin = getStore().users.find((u) => u.role === "ADMIN");
-  if (!matches || !admin) {
-    return {
-      token: null,
-      role: null,
-      status: null,
-      error: "Email/số điện thoại hoặc mật khẩu không đúng.",
-      httpStatus: 401,
-    };
-  }
-  return {
-    token: `${MOCK_TOKEN_PREFIX}${admin.id}`,
-    role: admin.role,
-    status: admin.status,
-    error: null,
-    httpStatus: 200,
-  };
 }
 
 async function signInBackend(
@@ -109,10 +82,7 @@ export async function POST(request: Request) {
     return fail("Vui lòng nhập đầy đủ thông tin đăng nhập.", 400);
   }
 
-  const result =
-    MOCK_MODE === "all"
-      ? signInMock(identifier, password)
-      : await signInBackend(identifier, password);
+  const result = await signInBackend(identifier, password);
 
   if (!result.token) return fail(result.error ?? "Đăng nhập thất bại.", result.httpStatus);
   if (result.role !== "ADMIN") {

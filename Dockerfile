@@ -5,6 +5,8 @@ COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
 ENV NEXT_PUBLIC_API_MOCK=off
+ARG NEXT_PUBLIC_GOONG_MAPTILES_KEY
+ENV NEXT_PUBLIC_GOONG_MAPTILES_KEY=$NEXT_PUBLIC_GOONG_MAPTILES_KEY
 RUN npm run build
 
 FROM node:22-bookworm-slim AS runtime
