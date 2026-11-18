@@ -63,7 +63,7 @@ export function TripDetailView() {
     <>
       <BackLink />
 
-      <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+      <section className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <StatusBadge meta={TRIP_STATUS[trip.status]} />
@@ -85,7 +85,7 @@ export function TripDetailView() {
             Huỷ chuyến
           </Button>
         ) : null}
-      </Card>
+      </section>
 
       {trip.status === "PUBLISHED" && resolveMockMode() !== "all" ? <p className="mb-5 text-sm text-muted">Hủy chuyến quản trị chưa khả dụng: cần Backend xử lý đặt chỗ liên quan, lý do, thông báo và audit trong cùng nghiệp vụ.</p> : null}
 
@@ -104,15 +104,15 @@ export function TripDetailView() {
         </p>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="space-y-6">
         <Card>
           <CardHeader
             title="Lộ trình"
             description={`${formatNumber(trip.totalDistanceKm)} km · ${formatDuration(trip.totalDurationMinutes)}`}
           />
-          <div className="space-y-5 p-5">
-            <TripRouteMap stops={stops} polyline={trip.routePolyline} />
-            <ol>
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="min-w-0 bg-gray-50 p-3"><TripRouteMap stops={stops} polyline={trip.routePolyline} /></div>
+            <ol className="max-h-[520px] overflow-y-auto border-t border-line p-5 lg:border-t-0 lg:border-l" aria-label="Lịch trình đã lưu">
               {stops.map((stop, index) => (
                 <li
                   key={stop.id}
@@ -127,9 +127,9 @@ export function TripDetailView() {
                   <span
                     className={cn(
                       "relative inline-flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold text-brand-900",
-                      stop.stopType === "DESTINATION"
-                        ? "border-brand-900 bg-accent"
-                        : "border-brand-700 bg-white",
+                       stop.stopType === "DESTINATION"
+                         ? "border-red-500 bg-red-50 text-red-700"
+                         : stop.stopType === "INTERMEDIATE_STOP" ? "border-amber-400 bg-amber-50 text-amber-800" : "border-brand-700 bg-white",
                     )}
                   >
                     {index + 1}
@@ -156,7 +156,7 @@ export function TripDetailView() {
           </div>
         </Card>
 
-        <div className="space-y-6">
+        <div className="grid items-start gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader title="Thông tin chuyến" />
             <dl className="divide-y divide-line px-5 py-2">

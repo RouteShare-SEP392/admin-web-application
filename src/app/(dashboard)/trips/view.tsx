@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@apollo/client/react";
-import { Search } from "lucide-react";
+import { ArrowUpRight, CalendarClock, Search, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { PersonCell } from "@/components/person-cell";
@@ -17,7 +17,7 @@ import {
   PageHeader,
   TableSkeleton,
 } from "@/components/ui/misc";
-import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
+import { Pagination } from "@/components/ui/table";
 import { TRIPS } from "@/lib/graphql";
 import { TRIP_STATUS } from "@/lib/labels";
 import { isProposedApiMocked } from "@/lib/mock-mode";
@@ -118,83 +118,32 @@ export function TripsView({ history = false }: { history?: boolean }) {
           />
         ) : (
           <>
-            <Table>
-              <thead>
-                <tr>
-                  <Th className="px-2.5 first:pl-4">Lộ trình</Th>
-                  <Th className="px-2.5">Tài xế</Th>
-                  <Th className="px-2.5">Khởi hành</Th>
-                   <Th className="px-2.5 text-center whitespace-nowrap">Ghế đã đăng</Th>
-                   <Th className="px-2.5 text-right whitespace-nowrap">Mức chia sẻ/km</Th>
-                  <Th className="px-2.5 text-center whitespace-nowrap">Trạng thái</Th>
-                  <Th className="px-2.5 text-right whitespace-nowrap last:pr-4">Thao tác</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.items.map((trip) => (
-                  <Tr key={trip.id}>
-                    <Td className="px-2.5 first:pl-4">
-                      <Link
-                        href={`/trips/${trip.id}`}
-                        className="block hover:text-brand-700"
-                      >
-                        <TripRoute stops={trip.stops} className="min-w-44" />
-                      </Link>
-                    </Td>
-                    <Td className="px-2.5">
-                      {trip.driver ? (
-                        <PersonCell
-                          person={trip.driver}
-                          href={`/users/${trip.driver.id}`}
-                          className="min-w-36"
-                        />
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </Td>
-                    <Td className="px-2.5">
-                      <div className="whitespace-nowrap">
-                        {formatDateTime(trip.departureTime)}
-                      </div>
-                      {(() => {
-                        const variance = computeDepartureVariance(
-                          trip.departureTime,
-                          trip.actualStartedAt,
-                          trip.status,
-                        );
-                        if (variance.tone === "neutral" && !variance.isOverdue) return null;
-                        return (
-                          <div className="mt-1" title={variance.label}>
-                            <Badge tone={variance.tone} className="text-[11px] px-2 py-0">
-                              {variance.shortLabel}
-                            </Badge>
-                          </div>
-                        );
-                      })()}
-                    </Td>
-                    <Td className="px-2.5 text-center whitespace-nowrap tabular-nums">
-                       {trip.totalSeatsOffered}
-                    </Td>
-                    <Td className="px-2.5 text-right whitespace-nowrap tabular-nums">
-                      {trip.pricing
-                        ? formatCurrency(trip.pricing.baseCostPerKm)
-                        : "—"}
-                    </Td>
-                    <Td className="px-2.5 text-center whitespace-nowrap">
-                      <StatusBadge meta={TRIP_STATUS[trip.status]} />
-                    </Td>
-                    <Td className="px-2.5 text-right whitespace-nowrap last:pr-4">
-                      <Link
-                        href={`/trips/${trip.id}`}
-                        className={buttonClass("secondary", "sm")}
-                      >
-                        Chi tiết
-                      </Link>
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Table>
+            {!history ? <div className="grid gap-4 bg-gray-50/50 p-4 md:grid-cols-2 2xl:grid-cols-3" aria-label="Các chuyến đi">{result.items.map((trip) => {
+              const variance = computeDepartureVariance(trip.departureTime, trip.actualStartedAt, trip.status);
+              return <article key={trip.id} className="rs-trip-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/70 px-5 py-3"><StatusBadge meta={TRIP_STATUS[trip.status]} /><span className="inline-flex items-center gap-1.5 text-xs text-muted"><Users className="size-3.5" aria-hidden />{trip.totalSeatsOffered} ghế đã đăng</span></div>
+                <div className="flex flex-1 flex-col p-5"><Link href={`/trips/${trip.id}`} className="block font-medium transition-colors hover:text-brand-700"><TripRoute stops={trip.stops} /></Link>
+                  <div className="mt-5 flex flex-wrap items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5"><CalendarClock className="size-4 shrink-0 text-muted" aria-hidden /><span className="text-sm font-medium tabular-nums">{formatDateTime(trip.departureTime)}</span>{variance.tone !== "neutral" || variance.isOverdue ? <Badge tone={variance.tone} className="text-[11px]" >{variance.shortLabel}</Badge> : null}</div>
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3">{trip.driver ? <PersonCell person={trip.driver} href={`/users/${trip.driver.id}`} /> : <span className="text-sm text-muted">Chưa có thông tin tài xế</span>}<div className="ml-auto text-right"><p className="text-[11px] text-muted">Mức chia sẻ / km</p><p className="mt-1 text-sm font-semibold tabular-nums">{trip.pricing ? formatCurrency(trip.pricing.baseCostPerKm) : "—"}</p></div></div>
+                </div>
+                <Link href={`/trips/${trip.id}`} className="flex items-center justify-between border-t border-line/70 px-5 py-3 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50">Xem hành trình<ArrowUpRight className="size-4" aria-hidden /></Link>
+              </article>;
+            })}</div> : <ol className="p-5 sm:p-7" aria-label="Lịch sử theo giờ khởi hành">{result.items.map((trip) => {
+              const variance = computeDepartureVariance(trip.departureTime, trip.actualStartedAt, trip.status);
+              return <li key={trip.id} className="rs-record-enter relative border-l border-line pb-7 pl-6 last:pb-0">
+                <span className="absolute top-1 -left-1.5 size-3 rounded-full border-2 border-white bg-brand-600 ring-1 ring-line" aria-hidden />
+                <div className="mb-3 flex flex-wrap items-center gap-3"><time dateTime={trip.departureTime} className="text-xs font-medium tabular-nums text-muted">Khởi hành dự kiến · {formatDateTime(trip.departureTime)}</time><StatusBadge meta={TRIP_STATUS[trip.status]} /></div>
+                <article className="min-w-0 rounded-xl border border-line bg-white p-5">
+                  <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(180px,1fr)]"><Link href={`/trips/${trip.id}`} className="min-w-0 font-medium hover:text-brand-700"><TripRoute stops={trip.stops} /></Link><div className="min-w-0 xl:justify-self-end">{trip.driver ? <PersonCell person={trip.driver} href={`/users/${trip.driver.id}`} /> : <p className="text-sm text-muted">Chưa có thông tin tài xế</p>}</div></div>
+                  <dl className="mt-5 grid gap-4 border-t border-line pt-4 text-sm sm:grid-cols-3">
+                    <div><dt className="text-xs text-muted">Khởi hành thực tế</dt><dd className="mt-1 tabular-nums">{trip.actualStartedAt ? formatDateTime(trip.actualStartedAt) : "Chưa ghi nhận"}{variance.tone !== "neutral" || variance.isOverdue ? <span className="mt-2 block" title={variance.label}><Badge tone={variance.tone} className="text-[11px]">{variance.shortLabel}</Badge></span> : null}</dd></div>
+                    <div><dt className="text-xs text-muted">Ghế đã đăng</dt><dd className="mt-1 tabular-nums">{trip.totalSeatsOffered}</dd></div>
+                    <div><dt className="text-xs text-muted">Mức chia sẻ / km</dt><dd className="mt-1 tabular-nums">{trip.pricing ? formatCurrency(trip.pricing.baseCostPerKm) : "—"}</dd></div>
+                  </dl>
+                  <div className="mt-4 flex justify-end"><Link href={`/trips/${trip.id}`} className="inline-flex items-center gap-2 py-2 text-sm font-medium text-brand-700">Xem hồ sơ hành trình<ArrowUpRight className="size-4" aria-hidden /></Link></div>
+                </article>
+              </li>;
+            })}</ol>}
             <Pagination
               page={result.page}
               pageSize={result.pageSize}

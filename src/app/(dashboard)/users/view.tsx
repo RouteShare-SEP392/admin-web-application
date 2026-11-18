@@ -1,9 +1,12 @@
 "use client";
 
 import { useQuery } from "@apollo/client/react";
-import { Search } from "lucide-react";
+import { ArrowUpRight, Eye, Search, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { PersonCell } from "@/components/person-cell";
+import { UserQuickView } from "@/components/user-quick-view";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Input, Select } from "@/components/ui/field";
 import {
@@ -13,7 +16,7 @@ import {
   PageHeader,
   TableSkeleton,
 } from "@/components/ui/misc";
-import { Pagination, Table, Td, Th, Tr } from "@/components/ui/table";
+import { Pagination } from "@/components/ui/table";
 import { USERS } from "@/lib/graphql";
 import { USER_ROLE, USER_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { isProposedApiMocked } from "@/lib/mock-mode";
@@ -28,6 +31,7 @@ export function UsersView() {
   const [role, setRole] = useState<UserRole | "">("");
   const [status, setStatus] = useState<UserStatus | "">("");
   const [page, setPage] = useState(1);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const debouncedSearch = useDebouncedValue(search.trim());
 
   const { data, previousData, loading, error, refetch } = useQuery(USERS, {
@@ -109,52 +113,7 @@ export function UsersView() {
           />
         ) : (
           <>
-            <Table>
-              <thead>
-                <tr>
-                  <Th>Người dùng</Th>
-                  <Th>Số điện thoại</Th>
-                  <Th>Vai trò</Th>
-                  <Th>Hồ sơ tài xế</Th>
-                  <Th>Trạng thái</Th>
-                  <Th>Ngày tham gia</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.items.map((user) => (
-                  <Tr key={user.id}>
-                    <Td>
-                      <PersonCell
-                        person={{ ...user, phone: null }}
-                        href={`/users/${user.id}`}
-                      />
-                    </Td>
-                    <Td className="whitespace-nowrap tabular-nums">
-                      {user.phone ?? <span className="text-muted">Chưa có</span>}
-                      {user.phone && !user.isPhoneVerified ? (
-                        <span className="ml-1.5 text-xs text-amber-700">(chưa xác thực)</span>
-                      ) : null}
-                    </Td>
-                    <Td>{USER_ROLE[user.role]}</Td>
-                    <Td>
-                      {user.driverProfile ? (
-                        <StatusBadge
-                          meta={VERIFICATION_STATUS[user.driverProfile.verificationStatus]}
-                        />
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </Td>
-                    <Td>
-                      <StatusBadge meta={USER_STATUS[user.status]} />
-                    </Td>
-                    <Td className="whitespace-nowrap text-muted">
-                      {formatDate(user.createdAt)}
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Table>
+            <div className="grid gap-5 bg-gray-50/50 p-5 md:grid-cols-2 2xl:grid-cols-3" aria-label="Danh bạ người dùng">{result.items.map((user) => <article key={user.id} className="rs-record-enter min-w-0 overflow-hidden rounded-xl border border-line bg-white"><div className="flex items-center justify-between gap-2 border-b border-line/70 px-5 py-3"><span className="text-xs text-muted">{USER_ROLE[user.role]}</span><StatusBadge meta={USER_STATUS[user.status]} /></div><div className="p-5"><PersonCell person={{ ...user, phone: null }} href={`/users/${user.id}`} /><p className="mt-5 text-sm tabular-nums">{user.phone ?? "Chưa có số điện thoại"}{user.phone && !user.isPhoneVerified ? <span className="ml-2 text-xs text-amber-700">Chưa xác thực</span> : null}</p><div className="mt-4 flex min-h-8 flex-wrap items-center gap-2 text-xs text-muted"><ShieldCheck className="size-4" aria-hidden />{user.driverProfile ? <StatusBadge meta={VERIFICATION_STATUS[user.driverProfile.verificationStatus]} /> : "Chưa đăng ký tài xế"}</div><p className="mt-3 text-xs text-muted">Tham gia {formatDate(user.createdAt)}</p></div><footer className="flex items-center justify-between border-t border-line/70 px-4 py-2"><Button variant="ghost" size="sm" onClick={() => setPreviewId(user.id)} aria-label={`Xem nhanh ${user.fullName}`}><Eye className="size-4" aria-hidden />Xem nhanh</Button><Link href={`/users/${user.id}`} className="inline-flex items-center gap-1.5 p-2 text-xs font-medium text-brand-700">Hồ sơ<ArrowUpRight className="size-3.5" aria-hidden /></Link></footer></article>)}</div>
             <Pagination
               page={result.page}
               pageSize={result.pageSize}
@@ -164,6 +123,7 @@ export function UsersView() {
           </>
         )}
       </Card>
+      {previewId ? <UserQuickView key={previewId} id={previewId} onClose={() => setPreviewId(null)} /> : null}
     </>
   );
 }

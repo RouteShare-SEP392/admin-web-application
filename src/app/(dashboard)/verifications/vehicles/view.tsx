@@ -1,21 +1,20 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client/react";
-import { Search } from "lucide-react";
+import { ArrowRight, Car, RefreshCw, Search } from "lucide-react";
 import { useState } from "react";
 import { PersonCell } from "@/components/person-cell";
+import { VerificationDocumentViewer } from "@/components/verification-document-viewer";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import {
-  Card,
   EmptyState,
   ErrorState,
   Fact,
   PageHeader,
   TableSkeleton,
 } from "@/components/ui/misc";
-import { Table, Td, Th, Tr } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import { VerificationReviewDialog } from "@/components/verification-review-dialog";
 import {
@@ -38,6 +37,7 @@ export function VehicleVerificationsView() {
 
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
   const all = data?.adminPendingVehicleVerifications ?? [];
@@ -54,6 +54,7 @@ export function VehicleVerificationsView() {
     ].some((value) => value.toLowerCase().includes(keyword));
   });
   const selected = all.find((doc) => doc.id === selectedId) ?? null;
+  const active = rows.find((doc) => doc.id === activeId) ?? rows[0] ?? null;
 
   function closeDialog() {
     setSelectedId(null);
@@ -81,12 +82,14 @@ export function VehicleVerificationsView() {
   return (
     <>
       <PageHeader
-        title="Duyệt giấy tờ xe"
-        description="Giấy đăng ký xe đang chờ xét duyệt. Đối chiếu biển số và loại xe với hạng bằng lái của chủ xe."
+        title="Xét duyệt phương tiện"
+        action={<Button variant="secondary" disabled={loading || reviewing} onClick={() => void refetch()}><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden />Làm mới</Button>}
         mocked={isExistingApiMocked()}
       />
 
-      <Card>
+      <div className="mb-5 flex items-center gap-3 text-sm"><Car className="size-5 text-brand-700" aria-hidden /><span className="font-medium">Bàn đối chiếu phương tiện</span><span className="text-muted">{data ? `${all.length} giấy đăng ký chờ duyệt` : "Đang tải hàng chờ"}</span></div>
+      <div className="grid overflow-hidden rounded-2xl border border-line bg-white xl:grid-cols-[260px_minmax(0,1fr)]">
+        <aside className="border-b border-line bg-gray-50/60 xl:border-r xl:border-b-0">
         <div className="border-b border-line p-4">
           <div className="relative max-w-md">
             <Search
@@ -118,47 +121,19 @@ export function VehicleVerificationsView() {
             }
           />
         ) : (
-          <Table>
-            <thead>
-              <tr>
-                <Th>Phương tiện</Th>
-                <Th>Biển số</Th>
-                <Th>Chủ xe</Th>
-                <Th>Nộp lúc</Th>
-                <Th className="text-right">Thao tác</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((doc) => (
-                <Tr key={doc.id}>
-                  <Td>
-                    <p className="font-medium">
-                      {doc.vehicle.make} {doc.vehicle.model}
-                    </p>
-                    <p className="text-xs text-muted">
-                      {VEHICLE_TYPE[doc.vehicle.vehicleType]} · {doc.vehicle.color}
-                    </p>
-                  </Td>
-                  <Td className="font-medium whitespace-nowrap tabular-nums">
-                    {doc.vehicle.plateNumber}
-                  </Td>
-                  <Td>
-                    <PersonCell person={doc.vehicle.driverProfile.user} />
-                  </Td>
-                  <Td className="whitespace-nowrap text-muted">
-                    {formatDateTime(doc.createdAt)}
-                  </Td>
-                  <Td className="text-right">
-                    <Button size="sm" onClick={() => setSelectedId(doc.id)}>
-                      Xem xét
-                    </Button>
-                  </Td>
-                </Tr>
-              ))}
-            </tbody>
-          </Table>
+          <div className="max-h-72 overflow-y-auto p-2 xl:max-h-[65dvh]" aria-label="Phương tiện chờ xét duyệt">{rows.map((doc) => <button key={doc.id} type="button" disabled={reviewing} aria-pressed={active?.id === doc.id} onClick={() => setActiveId(doc.id)} className={`rs-review-queue-item mb-1 block w-full rounded-xl border p-3 text-left ${active?.id === doc.id ? "border-brand-200 bg-white shadow-sm" : "border-transparent hover:bg-white"}`}><span className="block text-sm font-semibold tracking-wide">{doc.vehicle.plateNumber}</span><span className="mt-1 block text-xs text-muted">{doc.vehicle.make} {doc.vehicle.model}</span><span className="mt-2 block truncate text-xs text-muted">{doc.vehicle.driverProfile.user.fullName}</span><span className="mt-2 block text-[11px] text-subtle">{formatDateTime(doc.createdAt)}</span></button>)}</div>
         )}
-      </Card>
+        </aside>
+        {active ? <section key={active.id} className="rs-review-detail min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line px-6 py-5"><div><p className="mb-1 text-[10px] font-semibold tracking-widest text-muted uppercase">{VEHICLE_TYPE[active.vehicle.vehicleType]}</p><h2 className="text-lg font-semibold">{active.vehicle.make} {active.vehicle.model}</h2></div><span className="rounded-lg border-2 border-gray-300 bg-gray-50 px-4 py-2 font-mono text-lg font-semibold tracking-widest">{active.vehicle.plateNumber}</span></div>
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_220px]">
+            <VerificationDocumentViewer front={active.frontPhotoUrl ?? null} back={active.backPhotoUrl ?? null} />
+            <div className="min-w-0 space-y-6 border-t border-line p-5 break-words lg:border-t-0 lg:border-l"><section><h3 className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Phương tiện</h3><dl className="divide-y divide-line text-sm"><Fact label="Màu xe">{active.vehicle.color}</Fact><Fact label="Số chỗ">{active.vehicle.seatCapacity}</Fact><Fact label="Năm sản xuất">{active.vehicle.year ?? "—"}</Fact><Fact label="Số đăng ký">{active.documentNumber}</Fact></dl></section><section><h3 className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Chủ xe</h3><PersonCell person={active.vehicle.driverProfile.user} /><div className="mt-3"><StatusBadge meta={VERIFICATION_STATUS[active.vehicle.driverProfile.verificationStatus]} /></div></section></div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-4"><span className="text-xs text-muted">Nộp lúc {formatDateTime(active.createdAt)}</span><Button disabled={reviewing || loading || !!error} onClick={() => { setSelectedId(active.id); setReviewError(null); }}>Xem xét quyết định<ArrowRight className="size-4" aria-hidden /></Button></div>
+        </section> : <div className="flex min-h-96 items-center justify-center"><EmptyState title={loading ? "Đang tải hồ sơ" : error ? "Chưa tải được hồ sơ" : "Không có phương tiện để xem"} /></div>}
+      </div>
+      {error && data ? <ErrorState error={error} onRetry={() => refetch()} /> : null}
 
       <VerificationReviewDialog
         key={selected?.id}

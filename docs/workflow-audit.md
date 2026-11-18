@@ -1,5 +1,11 @@
 # Workflow and CRUD audit
 
+## Conduct oversight and settings slice — 18 November 2026
+
+- Added bounded ADMIN-only `adminConductHistory` for existing driver lifecycle evidence; requires the updated Backend deployment. No migration required, no points conversion or real penalty writes. UI separates existing legacy records, proposed two-role rules and the still-unavailable case/adjudication workflow.
+- Settings UI covers all 17 current Backend registry fields, grouped with units, effect descriptions, input limits, cross-field checks and a confirmation preview. Added `scripts/check-settings-catalog.mjs` to detect missing registry fields and validate boundaries. Existing Backend mutation remains authoritative; no instant mobile propagation, immutable settings audit or stale-preview conflict detection is claimed.
+- Newer mobile queries include fields absent from the local Backend (for example tripEditCutoffMinutes). These require contract/consumer integration rather than adding unsupported fields to ADMIN queries. Conduct intake, adjudication, point ledger, transactional notifications, restrictions and appeals are not implemented by this slice. Do not report the ADMIN workflow as complete.
+
 ## Full admin contract/read sweep — 15 November 2026
 
 - Validated all 19 retained frontend operations (queries and mutation contracts) against the running Backend schema and the generated local SDL: zero validation failures. Added `npm run check:contracts` as a repeatable, read-only static check. It does not prove authorization/state-transition correctness or execute writes.
@@ -67,3 +73,10 @@ Trip detail now shows offered seats, not a global remaining-seat claim; changes 
 - Verify route endpoints/rests, missing/corrupt geometry, invalid coordinates, denied tiles key, resizing and unmount/retry cleanup.
 - Test cash vs paid-online collection and payout unknown-result handling without sending real transfers.
 - Explicit all-demo mode must stay visibly demo. Missing mode is not production acceptance and still contains proposed read contracts.
+# Workflow-specific layout pass
+
+- Users use directory cards with authorized profile peek; trips use itinerary cards; journey history uses a timeline anchored to scheduled departure, with actual departure shown separately when present. Existing filters and server pagination remain.
+- Operational records use booking tickets, payOS collection-attempt reconciliation rows, review feedback panels and a read-only notification selector. Notification projections contain recipient, title and read metadata only; selecting a record does not mark it read. Review role labels describe the reviewed role, not the reviewer role.
+- Recurring oversight mounts one selected audit task at a time. Detailed evidence panels retain their existing read-only contracts and pagination. Proposed conduct rules use role navigation and expandable conditions; no points enforcement was activated.
+- Payout, support and global-audit unavailable states do not expose operational actions. No settings, verification, payment or penalty writes were performed during this layout pass.
+- Local checks passed: TypeScript, targeted ESLint, display-value regression, saved-route geometry, 17-field settings catalog and all 20 GraphQL operations against the local Backend SDL. HTTP route checks redirect unauthenticated requests to login. These checks are not authenticated browser, live API, cloud or native-device acceptance.

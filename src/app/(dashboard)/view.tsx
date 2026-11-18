@@ -6,14 +6,13 @@ import {
   ChevronRight,
   IdCard,
   Route,
-  ShieldAlert,
   UserCheck,
   Users,
-  ArrowUpRight,
-  Compass,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardHeader,
@@ -35,30 +34,10 @@ export function DashboardView() {
     <>
       <PageHeader
         title="Tổng quan"
-        description="Tình hình hoạt động của nền tảng và các việc đang chờ xử lý."
+        description="Không gian vận hành RouteShare"
+        action={<Button variant="secondary" disabled={loading} onClick={() => void refetch()}><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden />Làm mới</Button>}
         mocked={isProposedApiMocked()}
       />
-
-      <section className="rs-hero relative mb-7 overflow-hidden rounded-3xl bg-brand-900 p-6 text-white sm:p-8">
-        <div className="relative z-10 max-w-xl">
-          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-brand-100"><Compass className="size-3.5" aria-hidden /> ROUTESHARE / VẬN HÀNH</span>
-          <h2 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">Mỗi hành trình,<br /><span className="text-accent">đều được kết nối.</span></h2>
-          <p className="mt-3 max-w-sm text-sm leading-relaxed text-brand-100">Một góc nhìn cho chuyến đi, con người và những việc cần bạn xử lý.</p>
-          <Link href="/trips" className="rs-button mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-brand-900">Khám phá chuyến đi <ArrowUpRight className="size-4" aria-hidden /></Link>
-        </div>
-        <div className="rs-route-art pointer-events-none absolute inset-y-0 right-0 hidden w-[48%] opacity-75 md:block" aria-hidden="true">
-          <svg viewBox="0 0 480 280" className="h-full w-full" fill="none">
-            <path d="M-40 230H150Q190 230 190 190V100Q190 60 230 60H510M50-30V110Q50 150 90 150H340Q380 150 380 190V310" stroke="white" strokeOpacity=".08" strokeWidth="32" />
-            <path d="M-40 230H150Q190 230 190 190V100Q190 60 230 60H510M50-30V110Q50 150 90 150H340Q380 150 380 190V310" stroke="white" strokeOpacity=".16" strokeDasharray="4 8" />
-            <path className="rs-route-line" d="M80 230H150Q190 230 190 190V100Q190 60 230 60H390" stroke="#c8f25a" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="80" cy="230" r="12" fill="#143d2e" stroke="#c8f25a" strokeWidth="3" />
-            <circle cx="80" cy="230" r="4" fill="#c8f25a" />
-            <circle cx="390" cy="60" r="18" fill="#c8f25a" fillOpacity=".16" />
-            <circle cx="390" cy="60" r="7" fill="#c8f25a" />
-          </svg>
-          <span className="absolute right-8 bottom-8 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-brand-100 backdrop-blur">Chia sẻ hành trình. Kết nối cộng đồng.</span>
-        </div>
-      </section>
 
       {!stats && loading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -72,7 +51,7 @@ export function DashboardView() {
         </Card>
       ) : (
         <div className="space-y-6">
-          <div className="rs-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line xl:grid-cols-4">
             <StatTile
               icon={Users}
               label="Người dùng"
@@ -109,7 +88,7 @@ export function DashboardView() {
             </Card>
 
             <Card>
-              <CardHeader title="Việc cần xử lý" />
+              <CardHeader title="Hàng chờ xét duyệt" action={<span className="rounded-md bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700">{formatNumber(stats.pendingDriverVerifications + stats.pendingVehicleVerifications)}</span>} />
               <ul className="divide-y divide-line">
                 <TaskLink
                   href="/verifications/drivers"
@@ -123,13 +102,8 @@ export function DashboardView() {
                   label="Giấy tờ xe chờ duyệt"
                   count={stats.pendingVehicleVerifications}
                 />
-                <TaskLink
-                  href="/violations"
-                  icon={ShieldAlert}
-                  label="Vi phạm còn hiệu lực"
-                  count={stats.openViolations}
-                />
               </ul>
+              <div className="m-5 rounded-xl bg-gray-50 p-4"><p className="text-xs font-medium text-muted">Tra cứu nhanh</p><div className="mt-3 flex flex-wrap gap-2">{[["/trips", "Chuyến đi"], ["/users", "Người dùng"], ["/journey-history", "Lịch sử"]].map(([href, label]) => <Link key={href} href={href} className="rounded-lg border border-line bg-white px-3 py-2 text-xs font-medium transition-colors hover:border-brand-300 hover:text-brand-700">{label}</Link>)}</div></div>
             </Card>
           </div>
 
@@ -155,10 +129,10 @@ function StatTile({
   note: string;
 }) {
   return (
-    <Card className="rs-stat-tile relative overflow-hidden p-5">
+    <div className="relative min-w-0 overflow-hidden bg-white p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-muted">{label}</p>
-        <span className="rs-stat-icon inline-flex size-11 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
+        <span className="inline-flex size-8 items-center justify-center text-brand-700">
           <Icon className="size-5" aria-hidden />
         </span>
       </div>
@@ -166,7 +140,7 @@ function StatTile({
         {formatNumber(value)}
       </p>
       <p className="mt-1 text-sm text-muted">{note}</p>
-    </Card>
+    </div>
   );
 }
 

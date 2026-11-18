@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@apollo/client/react";
-import { ArrowLeft, Lock, LockOpen, Star } from "lucide-react";
+import { ArrowLeft, Lock, LockOpen, Mail, Phone, Star, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Badge, StatusBadge } from "@/components/ui/badge";
@@ -51,12 +51,14 @@ export function UserDetailView() {
     <>
       <BackLink />
 
-      <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+      <section className="rs-profile-header relative mb-6 overflow-hidden rounded-2xl border border-line bg-white px-6 pb-6 pt-14">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-20 bg-brand-50" />
+        <div className="relative flex flex-wrap items-end justify-between gap-5">
         <div className="flex items-center gap-4">
           <Avatar name={user.fullName} src={user.avatarUrl} size="lg" />
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-semibold">{user.fullName}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{user.fullName}</h1>
               <StatusBadge meta={USER_STATUS[user.status]} />
               {user.role === "ADMIN" ? <Badge tone="active">{USER_ROLE.ADMIN}</Badge> : null}
             {isExistingApiMocked() ? <MockBadge /> : null}
@@ -78,9 +80,13 @@ export function UserDetailView() {
             Mở khoá tài khoản
           </Button>
         ) : null}
-      </Card>
+        </div>
+        <div className="relative mt-6 flex flex-wrap gap-x-6 gap-y-3 border-t border-line pt-4 text-sm text-muted"><span className="inline-flex items-center gap-2"><Mail className="size-4" aria-hidden />{user.email ?? "Chưa có email"}</span><span className="inline-flex items-center gap-2"><Phone className="size-4" aria-hidden />{user.phone ?? "Chưa có số điện thoại"}</span><span className="inline-flex items-center gap-2"><UserRound className="size-4" aria-hidden />{USER_ROLE[user.role]}</span></div>
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4"><div className="bg-white px-5 py-4"><p className="text-xs text-muted">Chuyến đã đi</p><p className="mt-2 text-2xl font-semibold tabular-nums">{user.totalRidesAsPassenger}</p></div><div className="bg-white px-5 py-4"><p className="text-xs text-muted">Đánh giá hành khách</p><div className="mt-2"><Rating value={user.ratingAsPassenger} /></div></div><div className="bg-white px-5 py-4"><p className="text-xs text-muted">Chuyến đã chở</p><p className="mt-2 text-2xl font-semibold tabular-nums">{user.totalRidesAsDriver}</p></div><div className="bg-white px-5 py-4"><p className="text-xs text-muted">Đánh giá tài xế</p><div className="mt-2">{profile ? <Rating value={user.ratingAsDriver} /> : "—"}</div></div></div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <Card>
           <CardHeader title="Thông tin tài khoản" />
           <dl className="divide-y divide-line px-5 py-2">
@@ -104,20 +110,6 @@ export function UserDetailView() {
         </Card>
 
         <Card>
-          <CardHeader title="Hoạt động" />
-          <dl className="divide-y divide-line px-5 py-2">
-            <Fact label="Chuyến đã đi (hành khách)">{user.totalRidesAsPassenger}</Fact>
-            <Fact label="Điểm đánh giá (hành khách)">
-              <Rating value={user.ratingAsPassenger} />
-            </Fact>
-            <Fact label="Chuyến đã chở (tài xế)">{user.totalRidesAsDriver}</Fact>
-            <Fact label="Điểm đánh giá (tài xế)">
-              {profile ? <Rating value={user.ratingAsDriver} /> : "—"}
-            </Fact>
-          </dl>
-        </Card>
-
-        <Card className="lg:col-span-2">
           <CardHeader
             title="Hồ sơ tài xế"
             action={
@@ -131,7 +123,7 @@ export function UserDetailView() {
               Người dùng này chưa đăng ký làm tài xế.
             </p>
           ) : (
-            <div className="grid gap-x-8 gap-y-6 px-5 py-4 lg:grid-cols-3">
+            <div className="grid gap-x-8 gap-y-6 px-5 py-4 xl:grid-cols-2">
               <dl className="divide-y divide-line">
                 <Fact label="Kinh nghiệm lái xe">{profile.experienceYears} năm</Fact>
                 <Fact label="Số lần bỏ chuyến">{profile.noShowStrikeCount}</Fact>

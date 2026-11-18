@@ -56,7 +56,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
       { href: "/journey-history", label: "Lịch sử hành trình", icon: History },
       { href: "/trip-operations", label: "Lịch định kỳ & thay đổi", icon: History },
       { href: "/operations/bookings", label: "Đặt chỗ", icon: ClipboardList },
-      { href: "/violations", label: "Vi phạm", icon: ShieldAlert },
+      { href: "/violations", label: "Phản ánh & điểm tuân thủ", icon: ShieldAlert },
       { href: "/operations/reviews", label: "Đánh giá", icon: Star },
       { href: "/operations/support", label: "Hỗ trợ & phản ánh", icon: LifeBuoy },
     ],
@@ -73,7 +73,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
     items: [
       { href: "/operations/notifications", label: "Thông báo", icon: Bell },
       { href: "/operations/audit", label: "Nhật ký quản trị", icon: ScrollText },
-      { href: "/settings", label: "Cấu hình", icon: Settings },
+      { href: "/settings", label: "Cấu hình hệ thống", icon: Settings },
     ],
   },
 ];
@@ -116,11 +116,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-brand-900 text-white transition-transform lg:translate-x-0",
+          "rs-app-sidebar fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-line bg-white text-ink transition-transform lg:translate-x-0",
           menuOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-20 items-center justify-between border-b border-white/10 px-5">
+        <div className="flex h-20 items-center justify-between border-b border-line px-5">
           <Link href="/" className="flex items-center gap-2.5" onClick={() => setMenuOpen(false)}>
             <img
               src="/routeshare-logo.png"
@@ -129,13 +129,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             <span className="leading-tight">
               <span className="block font-semibold">RouteShare</span>
-              <span className="mt-1 block text-[11px] font-medium tracking-[0.16em] text-brand-200 uppercase">Không gian quản trị</span>
+              <span className="mt-1 block text-[10px] font-medium tracking-[0.16em] text-muted uppercase">Quản trị vận hành</span>
             </span>
           </Link>
           <button
             type="button"
             aria-label="Đóng menu"
-            className="rounded-lg p-1.5 text-brand-200 hover:bg-white/10 lg:hidden"
+              className="rounded-lg p-1.5 text-muted hover:bg-gray-100 lg:hidden"
             onClick={() => setMenuOpen(false)}
           >
             <X className="size-5" />
@@ -146,7 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {NAV.map((group, index) => (
             <div key={group.title ?? index} className="mb-4" data-nav-group={group.title ?? "Tổng quan"}>
               {group.title ? (
-                <p className="px-3 pb-1.5 text-xs font-semibold tracking-wide text-brand-300 uppercase">
+                <p className="px-3 pb-1.5 text-[10px] font-semibold tracking-widest text-subtle uppercase">
                   {group.title}
                 </p>
               ) : null}
@@ -163,15 +163,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                         className={cn(
                           "rs-nav-link flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                           active
-                            ? "bg-accent text-brand-900 shadow-sm"
-                            : "text-brand-100 hover:bg-white/10 hover:text-white",
+                            ? "bg-brand-50 text-brand-800"
+                            : "text-muted hover:bg-gray-50 hover:text-ink",
                         )}
                       >
                         <item.icon className="size-[18px] shrink-0" aria-hidden />
                         <span className="flex-1">{item.label}</span>
                         {count > 0 ? (
                           <span
-                            className={cn("rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums", active ? "bg-brand-900 text-white" : "bg-accent text-brand-900")}
+                            className={cn("rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums", active ? "bg-brand-700 text-white" : "bg-gray-100 text-muted")}
                             aria-label={`${count} hồ sơ chờ duyệt`}
                           >
                             {count}
@@ -186,18 +186,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className="shrink-0 border-t border-white/10 p-3">
+        <div className="shrink-0 border-t border-line p-3">
           <div className="flex items-center gap-3 px-2 py-2">
             <Avatar name={admin?.fullName ?? "Quản trị"} />
             <div className="min-w-0 flex-1 leading-tight">
               <p className="truncate text-sm font-medium">{admin?.fullName ?? "Quản trị viên"}</p>
-              <p className="truncate text-xs text-brand-300">{admin?.email ?? ""}</p>
+              <p className="truncate text-xs text-muted">{admin?.email ?? ""}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={logout}
-            className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-brand-100 hover:bg-white/10 hover:text-white"
+            className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-gray-100 hover:text-ink"
           >
             <LogOut className="size-[18px]" aria-hidden />
             Đăng xuất
@@ -215,7 +215,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           <Menu className="size-5" />
         </button>
-        <div className="min-w-0 flex-1 text-sm"><span className="hidden text-muted sm:inline">Không gian quản trị <span className="mx-2 text-subtle">/</span></span><span className="font-semibold">{currentSection?.label ?? "Chi tiết"}</span></div>
+        <div className="min-w-0 flex-1 text-sm"><span className="hidden text-muted sm:inline">RouteShare <span className="mx-2 text-subtle">/</span></span><span className="font-medium">{currentSection?.label ?? "Chi tiết"}</span></div>
       </header>
 
       <main id="admin-content" tabIndex={-1} className="mx-auto w-full max-w-7xl px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8">

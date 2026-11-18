@@ -26,19 +26,19 @@
 }
 
 body {
-  background: radial-gradient(ellipse at 95% 0%, #eaf4ee 0%, transparent 45%), var(--color-canvas);
+  background: #f7f8fa;
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
 }
 
 .rs-card {
-  box-shadow: 0 2px 4px rgb(20 61 46 / 0.025), 0 8px 24px rgb(20 61 46 / 0.025);
+  box-shadow: 0 1px 3px rgb(20 30 25 / 0.025);
   transition: box-shadow 200ms ease, border-color 200ms ease;
 }
 
 .rs-sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #6f9987 #143d2e;
+  scrollbar-color: #d0d8d3 transparent;
   overscroll-behavior: contain;
 }
 
@@ -54,9 +54,8 @@ body {
 .rs-map-marker-destination { background: #dc2626; border-radius: 50% 50% 50% 0; }
 .rs-map-marker-intermediate_stop { background: #fbbf24; color: #422006; font-size: 12px; font-weight: 700; }
 
-.rs-page-enter { animation: rs-enter 360ms ease-out both; }
-.rs-page-heading { animation: rs-enter 400ms ease-out both; }
-.rs-stagger > * { animation: rs-enter 500ms ease-out both; }
+.rs-page-enter { animation: rs-enter 200ms ease-out both; }
+.rs-stagger > * { animation: rs-enter 240ms ease-out both; }
 .rs-stagger > :nth-child(2) { animation-delay: 60ms; }
 .rs-stagger > :nth-child(3) { animation-delay: 120ms; }
 .rs-stagger > :nth-child(4) { animation-delay: 180ms; }
@@ -82,15 +81,12 @@ body {
 .rs-stat-icon { transition: transform 220ms ease, background-color 220ms ease; }
 
 @media (hover: hover) {
-  .rs-card:hover { border-color: var(--color-brand-200); box-shadow: 0 8px 28px rgb(20 61 46 / 0.07); }
-  .rs-stat-tile:hover .rs-stat-icon { transform: rotate(-7deg) scale(1.08); background: var(--color-accent); }
-  .rs-button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 10px rgb(20 61 46 / 0.12); }
-  .rs-nav-link:hover { transform: translateX(2px); }
+  .rs-button:hover:not(:disabled) { box-shadow: 0 2px 4px rgb(20 61 46 / 0.06); }
 }
 
 @keyframes rs-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes rs-route-draw { from { stroke-dashoffset: 500; } to { stroke-dashoffset: 0; } }
 @keyframes rs-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
@@ -115,6 +111,22 @@ dialog[open] {
   animation: dialog-in 140ms ease-out;
 }
 
+.rs-settings-tab { transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
+.rs-review-queue-item { transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
+.rs-review-detail { animation: rs-enter 180ms ease-out both; }
+.rs-record-enter { animation: rs-enter 180ms ease-out both; }
+.rs-trip-card { animation: rs-enter 180ms ease-out both; transition: border-color 160ms ease, box-shadow 160ms ease; }
+@media (hover: hover) { .rs-trip-card:hover { border-color: var(--color-brand-200); box-shadow: 0 4px 14px rgb(20 40 30 / .05); } }
+.rs-document-canvas { background-image: radial-gradient(#cfd6d2 1px, transparent 1px); background-size: 16px 16px; }
+.rs-settings-panel { animation: rs-enter 180ms ease-out both; }
+.rs-save-bar { animation: rs-enter 200ms ease-out both; }
+.rs-settings-layout input { transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease; }
+.rs-settings-layout input:focus { box-shadow: 0 0 0 3px rgb(31 92 69 / 0.07); }
+.rs-settings-layout input[aria-invalid="true"] { border-color: #dc2626; background: #fffafa; }
+.rs-confirm-dialog[open] { animation: rs-dialog-enter 200ms ease-out both; }
+.rs-confirm-dialog::backdrop { background: rgb(15 23 20 / 0.32); backdrop-filter: blur(3px); }
+@keyframes rs-dialog-enter { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+
 @keyframes dialog-in {
   from {
     opacity: 0;
@@ -135,4 +147,10 @@ dialog[open] {
   dialog[open] {
     animation: none;
   }
+  .rs-settings-panel, .rs-save-bar, .rs-confirm-dialog[open] { animation: none; }
+  .rs-settings-tab, .rs-settings-layout input, .rs-app-sidebar { transition: none; }
+  .rs-review-detail { animation: none; }
+  .rs-record-enter { animation: none; }
+  .rs-trip-card { animation: none; transition: none; }
+  .rs-review-queue-item { transition: none; }
 }
