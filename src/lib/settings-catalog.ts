@@ -3,6 +3,8 @@ export const SETTINGS_CATALOG = {
   minCostPerKm: { label: "Mức chia sẻ tối thiểu mỗi km", unit: "đ/km", group: "Giá và phí", min: 0.01, step: "any", effect: "Kiểm tra mức chia sẻ khi đăng chuyến mới; không sửa giá đã chốt." },
   maxCostPerKm: { label: "Mức chia sẻ tối đa mỗi km", unit: "đ/km", group: "Giá và phí", min: 0.01, step: "any", effect: "Phải lớn hơn hoặc bằng mức tối thiểu." },
   defaultSearchRadiusMeters: { label: "Bán kính tìm mặc định", unit: "m", group: "Tìm kiếm và lịch trình", min: 500, max: 5000, effect: "Dùng khi yêu cầu tìm kiếm không chỉ định bán kính; trần an toàn cố định 5.000 m." },
+  defaultSearchTimeWindowMinutes: { label: "Độ lệch giờ đón tối đa", unit: "phút", group: "Tìm kiếm và lịch trình", min: 15, max: 360, effect: "Tìm trong khoảng trước và sau giờ đã chọn; không đổi giờ đón của đặt chỗ đã có." },
+  bestMatchRadiusMeters: { label: "Ngưỡng Phù hợp nhất", unit: "m", group: "Tìm kiếm và lịch trình", min: 500, max: 5000, effect: "Cả điểm đón và điểm trả phải cách tuyến không quá ngưỡng này để có nhãn Phù hợp nhất. Không mở rộng bán kính tìm." },
   minDepartureLeadMinutes: { label: "Thời gian tối thiểu trước khởi hành", unit: "phút", group: "Tìm kiếm và lịch trình", min: 1, max: 1440, effect: "Kiểm tra đăng chuyến mới; không dời lịch chuyến hiện có." },
   maxWaypointDistanceMeters: { label: "Khoảng cách điểm nghỉ tối đa", unit: "m", group: "Tìm kiếm và lịch trình", min: 100, max: 5000, effect: "Kiểm tra điểm nghỉ so với tuyến gốc khi xem trước/đăng chuyến." },
   maxStopWaitMinutes: { label: "Thời gian nghỉ tối đa", unit: "phút", group: "Tìm kiếm và lịch trình", min: 1, max: 1440, effect: "Giới hạn cho lịch nghỉ mới; giữ nguyên lịch đã lưu." },
