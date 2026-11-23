@@ -14,6 +14,7 @@ import { formatCurrency } from "@/lib/utils";
 // Keep documents explicit so schema checks do not depend on evaluating UI imports.
 const fields = gql`fragment AdminSettingsFields on AppSettings {
   platformFeePercent minCostPerKm maxCostPerKm defaultSearchRadiusMeters minDepartureLeadMinutes
+  defaultSearchTimeWindowMinutes bestMatchRadiusMeters
   maxWaypointDistanceMeters maxStopWaitMinutes tripScheduleChangeToleranceMinutes activeUploadSeconds
   activeStationarySeconds activeViewerPollSeconds activeGpsMaxAgeSeconds activeGpsFutureSkewSeconds
   activeGpsAccuracyMeters activeProximityMeters activeOffRouteMeters activePassedPickupMeters
@@ -102,7 +103,8 @@ function SettingsForm({ current, refresh }: { current: SettingsValues; refresh: 
           const changed = draft[key].trim() === "" || Number(draft[key]) !== current[key];
           const value = Number(draft[key]);
           const invalid = !draft[key].trim() || !Number.isFinite(value) || value < meta.min || (meta.max !== undefined && value > meta.max) || (!meta.step && !Number.isInteger(value));
-          return <Field key={key} htmlFor={key} label={meta.label} error={changed && invalid ? `Nhập ${meta.step ? "số" : "số nguyên"} từ ${meta.min}${meta.max !== undefined ? ` đến ${meta.max}` : " trở lên"}.` : null}><div className="relative"><Input id={key} name={key} type="number" aria-invalid={changed && invalid} className={`pr-16 ${changed ? "border-brand-300 bg-brand-50/30" : ""}`} min={meta.min} max={meta.max} step={meta.step ?? "1"} value={draft[key]} onChange={(event) => { setDraft((previous) => ({ ...previous, [key]: event.target.value })); setMessage(""); }} required /><span className="pointer-events-none absolute right-3 top-3 text-xs text-muted">{meta.unit}</span></div>{changed ? <p className="text-xs text-muted">Hiện tại: {current[key]} {meta.unit}</p> : null}</Field>;
+          const isTripSearch = key === "defaultSearchRadiusMeters" || key === "defaultSearchTimeWindowMinutes" || key === "bestMatchRadiusMeters";
+          return <Field key={key} htmlFor={key} label={meta.label} error={changed && invalid ? `Nhập ${meta.step ? "số" : "số nguyên"} từ ${meta.min}${meta.max !== undefined ? ` đến ${meta.max}` : " trở lên"}.` : null}><div className="relative"><Input id={key} name={key} type="number" aria-describedby={isTripSearch ? `${key}-help` : undefined} aria-invalid={changed && invalid} className={`pr-16 ${changed ? "border-brand-300 bg-brand-50/30" : ""}`} min={meta.min} max={meta.max} step={meta.step ?? "1"} value={draft[key]} onChange={(event) => { setDraft((previous) => ({ ...previous, [key]: event.target.value })); setMessage(""); }} required /><span className="pointer-events-none absolute right-3 top-3 text-xs text-muted">{meta.unit}</span></div>{isTripSearch ? <p id={`${key}-help`} className="text-xs text-muted">{meta.effect}</p> : null}{changed ? <p className="text-xs text-muted">Hiện tại: {current[key]} {meta.unit}</p> : null}</Field>;
         })}
       </div></Card>)}
       {!visible.length ? <Card className="p-6 text-sm">Không tìm thấy tham số phù hợp.</Card> : null}
