@@ -58,7 +58,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
       { href: "/operations/bookings", label: "Đặt chỗ", icon: ClipboardList },
       { href: "/violations", label: "Phản ánh & điểm tuân thủ", icon: ShieldAlert },
       { href: "/operations/reviews", label: "Đánh giá", icon: Star },
-      { href: "/operations/support", label: "Hỗ trợ & phản ánh", icon: LifeBuoy },
+      { href: "/support-cases", label: "Yêu cầu hỗ trợ", icon: LifeBuoy },
     ],
   },
   {

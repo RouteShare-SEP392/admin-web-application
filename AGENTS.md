@@ -20,3 +20,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Recurring and change audit panels use real backend APIs, cursor pagination and read-only evidence. Keep mocked proposed admin actions separate. Provider acceptance is not device delivery or reading; edits/cancellations do not automatically establish fault.
 
 - Recurring template change history is read-only and cursor-paginated through `adminRecurringTemplateChanges`; show persisted before/after revisions without inferring fault.
+
+- Post-trip support follows existing mobile and admin UI patterns. Keep mobile intake compact and accessible, and give admins a filterable queue and case details with the evidence and handling history needed to resolve reports.
