@@ -106,10 +106,10 @@ function ReviewContent({
                 <img
                   src={photo.url}
                   alt={photo.label}
-                  className="max-h-80 w-full rounded-xl border border-line bg-canvas object-contain"
+                  className="h-48 w-full rounded-xl border border-line bg-canvas p-2 object-contain sm:h-56"
                 />
               ) : (
-                <p className="rounded-xl border border-dashed border-line bg-canvas px-4 py-8 text-center text-sm text-muted">
+                <p className="grid h-48 place-items-center rounded-xl border border-dashed border-line bg-canvas px-4 text-center text-sm text-muted sm:h-56">
                   Người dùng không nộp ảnh này.
                 </p>
               )}
