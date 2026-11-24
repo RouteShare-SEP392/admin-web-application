@@ -1,5 +1,9 @@
 # Workflow and CRUD audit
 
+## Production contract repair
+
+- The Admin web directory, trips, dashboard, conduct history, and operational records require the Backend ADMIN read module. Deploy the Backend schema before the Admin build and verify authenticated reads. Operational records support bookings, reviews, and notifications; online payment and reconciliation show an unavailable state and do not issue a query.
+
 ## Conduct oversight and settings slice — 18 November 2026
 
 - Added bounded ADMIN-only `adminConductHistory` for existing driver lifecycle evidence; requires the updated Backend deployment. No migration required, no points conversion or real penalty writes. UI separates existing legacy records, proposed two-role rules and the still-unavailable case/adjudication workflow.
