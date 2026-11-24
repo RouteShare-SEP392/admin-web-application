@@ -4,6 +4,7 @@ import { gql } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useState } from "react";
 import { ME } from "@/lib/graphql";
+import { ConversationReports } from "./conversation-reports";
 import { CATALOG, CatalogEditor, type Catalog } from "./catalog";
 
 const QUEUE = gql`
@@ -145,6 +146,11 @@ const ADMINS = gql`
     }
   }
 `;
+const REQUEUE = gql`
+  mutation RequeueSupportCase($id: ID!, $reason: String!) {
+    requeueSupportCase(id: $id, reason: $reason) { id status assignedAdminId }
+  }
+`;
 const SAVE_EVIDENCE = gql`
   mutation SaveSupportCaseEvidence($id: ID!, $messageId: ID!) {
     saveSupportCaseEvidence(id: $id, messageId: $messageId)
@@ -211,6 +217,7 @@ const states = {
 const eventNames: Record<string, string> = {
   CLAIMED: "Nhận xử lý",
   REASSIGNED: "Đổi người xử lý",
+  REQUEUED: "Đưa về hàng đợi",
   RECLASSIFIED: "Đổi loại vấn đề",
   LINKED: "Liên kết hồ sơ",
   RESOLVED: "Công bố kết quả",
@@ -239,6 +246,7 @@ function CaseDetail({
   open,
   catalog,
   admins,
+  adminsLoaded,
 }: {
   id: string;
   userId?: string;
@@ -246,6 +254,7 @@ function CaseDetail({
   open: (id: string) => void;
   catalog?: Catalog;
   admins: Admin[];
+  adminsLoaded: boolean;
 }) {
   const { data, loading, error, refetch } = useQuery<{
     adminSupportCase: Detail;
@@ -256,6 +265,8 @@ function CaseDetail({
   const [claim, claimState] = useMutation(CLAIM);
   const [publish, publishState] = useMutation(PUBLISH);
   const [reassign, reassignState] = useMutation(REASSIGN);
+  const [requeue, requeueState] = useMutation(REQUEUE);
+  const [requeueReason, setRequeueReason] = useState("");
   const [reclassify, classifyState] = useMutation(RECLASSIFY);
   const [saveEvidence, evidenceState] = useMutation(SAVE_EVIDENCE);
   const [response, setResponse] = useState("");
@@ -466,6 +477,23 @@ function CaseDetail({
           Chưa nhận được hồ sơ. Hãy kiểm tra trạng thái mới nhất.
         </p>
       ) : null}
+      {adminsLoaded && row.status === "ASSIGNED" &&
+        !admins.some((admin) => admin.id === row.assignedAdminId) ? (
+        <form className="space-y-2" onSubmit={(event) => {
+          event.preventDefault();
+          if (!requeueReason.trim() || requeueState.loading) return;
+          void update(() => requeue({ variables: { id, reason: requeueReason.trim() } }))
+            .then(() => setRequeueReason("")).catch(() => undefined);
+        }}>
+          <p>Người phụ trách hiện không còn quyền xử lý hồ sơ.</p>
+          <label className="block font-semibold">Lý do đưa về hàng đợi
+            <textarea className={`mt-1 block w-full ${field}`} required maxLength={2000}
+              value={requeueReason} onChange={(event) => setRequeueReason(event.target.value)} />
+          </label>
+          <button className={button} disabled={!requeueReason.trim() || requeueState.loading}>Đưa về hàng đợi</button>
+          {requeueState.error ? <p role="alert">Chưa đưa được hồ sơ về hàng đợi. Hãy kiểm tra trạng thái mới nhất.</p> : null}
+        </form>
+      ) : null}
       {row.status === "ASSIGNED" && row.assignedAdminId === userId ? (
         <>
           <details className="space-y-3">
@@ -651,7 +679,7 @@ export function SupportWorkspace() {
   const { data: adminData } = useQuery<{ supportAssignableAdmins: Admin[] }>(
     ADMINS,
   );
-  const [view, setView] = useState<"queue" | "catalog">("queue");
+  const [view, setView] = useState<"queue" | "catalog" | "conversations">("queue");
   const [selected, setSelected] = useState<string>();
   const [status, setStatus] = useState("");
   const [safety, setSafety] = useState(false);
@@ -681,7 +709,7 @@ export function SupportWorkspace() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Yêu cầu hỗ trợ</h1>
-      <nav aria-label="Quản lý hỗ trợ" className="flex gap-2">
+      <nav aria-label="Quản lý hỗ trợ" className="flex flex-wrap gap-2">
         <button
           className={field}
           aria-pressed={view === "queue"}
@@ -696,9 +724,13 @@ export function SupportWorkspace() {
         >
           Danh mục
         </button>
+        <button className={field} aria-pressed={view === "conversations"}
+          onClick={() => setView("conversations")}>Báo cáo hội thoại</button>
       </nav>
       {view === "catalog" ? (
         <CatalogEditor />
+      ) : view === "conversations" ? (
+        <ConversationReports />
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-3">
@@ -862,6 +894,7 @@ export function SupportWorkspace() {
                 open={setSelected}
                 catalog={catalog?.adminSupportCatalog}
                 admins={admins}
+                adminsLoaded={Boolean(adminData)}
               />
             ) : null}
           </div>
