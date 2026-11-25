@@ -1,5 +1,5 @@
 export const SETTINGS_CATALOG = {
-  platformFeePercent: { label: "Phí nền tảng", unit: "%", group: "Giá và phí", min: 0, max: 100, step: "0.01", effect: "Chụp mức phí khi đăng chuyến; không đổi phí của chuyến đã đăng." },
+  platformFeePercent: { label: "Tỷ lệ phí nền tảng", unit: "%", group: "Giá và phí", min: 0, max: 100, step: "0.01", effect: "Áp dụng khi đăng chuyến mới, kể cả chuyến định kỳ. Không thay đổi phí của chuyến đã đăng." },
   minCostPerKm: { label: "Mức chia sẻ tối thiểu mỗi km", unit: "đ/km", group: "Giá và phí", min: 0.01, step: "any", effect: "Kiểm tra mức chia sẻ khi đăng chuyến mới; không sửa giá đã chốt." },
   maxCostPerKm: { label: "Mức chia sẻ tối đa mỗi km", unit: "đ/km", group: "Giá và phí", min: 0.01, step: "any", effect: "Phải lớn hơn hoặc bằng mức tối thiểu." },
   defaultSearchRadiusMeters: { label: "Bán kính tìm mặc định", unit: "m", group: "Tìm kiếm và lịch trình", min: 500, max: 5000, effect: "Dùng khi yêu cầu tìm kiếm không chỉ định bán kính; trần an toàn cố định 5.000 m." },

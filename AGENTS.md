@@ -10,6 +10,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## RouteShare trip operations
 
+- Keep driver fee balances separate from passenger payments and payouts. Confirm top-ups only against actual bank receipts; use audited ledger entries for adjustments and make publication mode explicit.
+- Use the existing system setting to manage the percentage for newly published trips; do not add a second rate to wallet policy.
+
 - Trip-detail maps use Goong with the public Map tiles key and persisted route geometry only. Never expose the server Places/Direction key, reroute missing historical geometry, or add admin live GPS access implicitly. Consult docs/workflow-audit.md for current workflow gaps; mock decisions must never masquerade as writes to live entities.
 
 - Admin scope covers mobile operations; consult docs/admin-coverage.md and src/lib/admin-modules.ts for audited coverage and gaps. Do not equate a navigation entry or design-only screen with a working backend integration. Historical journey evidence is read-only; do not expose BOARD codes, tracking access, secrets or manual financial success overrides.
