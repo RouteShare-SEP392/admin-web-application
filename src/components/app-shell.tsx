@@ -66,6 +66,7 @@ const NAV: { title: string | null; items: NavItem[] }[] = [
     items: [
       { href: "/operations/payments", label: "Thu tiền & đối soát", icon: CreditCard },
       { href: "/payouts", label: "Chi trả tài xế", icon: Wallet },
+      { href: "/driver-fees", label: "Ví phí & Báo cáo tài xế", icon: Wallet },
     ],
   },
   {
